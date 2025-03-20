@@ -4,9 +4,14 @@
 #include <string>
 
 class Guest {
-public:
-    Guest(std::string name, std::string phone, std::string email);
-    void displayInfo();
-};
+    private:
+        std::string name;
+        std::string phone;
+        std::string email;
+    public:
+        Guest(std::string name, std::string phone, std::string email);
+        void displayInfo();
+        void welcomeGuest();
+    };
 
 #endif

@@ -7,6 +7,7 @@ class Admin {
 public:
     Admin(std::string username, std::string password);
     bool login();
+    
 };
 
 #endif

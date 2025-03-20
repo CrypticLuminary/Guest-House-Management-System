@@ -9,5 +9,9 @@
 
 int main() {
     std::cout << "Welcome to Guest House Management System" << std::endl;
+    
+    Guest guest("John Doe", "555-1234", "john@example.com");
+    guest.welcomeGuest();
+    
     return 0;
 }
