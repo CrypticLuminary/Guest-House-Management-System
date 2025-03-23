@@ -1,10 +1,12 @@
 all: guesthouse
 
 guesthouse: src/*.cpp
-	g++ src/*.cpp -Iinclude -o guesthouse
+	gcc -shared src/sqlite3.c -o sqlite3.dll 
+	g++ src/*.cpp sqlite3.dll -Iinclude -o guesthouse 
 
 run: guesthouse
 	./guesthouse
 
 clean:
 	rm -rf guesthouse
+

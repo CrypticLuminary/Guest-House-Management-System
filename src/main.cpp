@@ -1,17 +1,38 @@
 #include <iostream>
-// #include "database.h"
-#include "guest.h"
-#include "booking.h"
-#include "billing.h"
-#include "reports.h"
-#include "admin.h"
-#include "housekeeping.h"
+#include "../include/database.h"
+#include "../include/guest.h"
+#include "../include/booking.h"
+#include "../include/billing.h"
+#include "../include/reports.h"
+#include "../include/admin.h"
+#include "../include/housekeeping.h"
+
+
 
 int main() {
-    std::cout << "Welcome to Guest House Management System" << std::endl;
-    
-    Guest guest("John Doe", "555-1234", "john@example.com");
-    guest.welcomeGuest();
-    
+    // Create a Database object
+    Database db("guest_house.db");
+
+    // Open the database
+    if (!db.open()) {
+        return 1;
+    }
+
+    // Create the Guests table
+    if (!db.createTable()) {
+        db.close();
+        return 1;
+    }
+
+    // Insert a guest
+    db.insertGuest("John Doe", "1234567890", "john.doe@example.com");
+    db.insertGuest("Jane Smith", "9876543210", "jane.smith@example.com");
+
+    // Print all guests
+    db.printGuests();
+
+    // Close the database
+    db.close();
+
     return 0;
 }

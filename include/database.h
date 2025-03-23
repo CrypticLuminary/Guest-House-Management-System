@@ -1,9 +1,23 @@
-// #ifndef DATABASE_H
-// #define DATABASE_H
+#ifndef DATABASE_H
+#define DATABASE_H
 
-// #include <string>
+#include "./sqlite3.h"
+#include <string>
 
-// bool initDatabase();
-// bool executeQuery(const std::string &query);
+class Database {
+public:
+    Database(const std::string& dbFile);
+    ~Database();
 
-// #endif
+    bool open();
+    void close();
+    bool createTable();
+    bool insertGuest(const std::string& name, const std::string& phone, const std::string& email);
+    void printGuests();
+
+private:
+    sqlite3* db;
+    std::string dbFile;
+};
+
+#endif // DATABASE_H
