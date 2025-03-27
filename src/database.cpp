@@ -1,6 +1,7 @@
 #include "../include/database.h"
 #include "../include/sqlite3.h"
 #include <iostream>
+using namespace std;
 
 // Constructor
 Database::Database(const std::string& dbFile) : db(nullptr), dbFile(dbFile) {}
@@ -16,7 +17,7 @@ Database::~Database() {
 bool Database::open() {
     int rc = sqlite3_open(dbFile.c_str(), &db);
     if (rc) {
-        std::cerr << "Can't open database: " << sqlite3_errmsg(db) << std::endl;
+        cerr << "Can't open database: " << sqlite3_errmsg(db) << std::endl;
         return false;
     }
     std::cout << "Database opened successfully!" << std::endl;
@@ -28,35 +29,56 @@ void Database::close() {
     if (db) {
         sqlite3_close(db);
         db = nullptr;
-        std::cout << "Database closed." << std::endl;
+        cout << "Database closed." << std::endl;
     }
 }
 
-// Create the Guests table
+
 bool Database::createTable() {
-    const char* sql = "CREATE TABLE IF NOT EXISTS Guests ("
+    sqlite3_busy_timeout(db, 5000);
+    // Create the Guests table
+    const char* sqlGuest = "CREATE TABLE IF NOT EXISTS Guests ("
                       "guest_id INTEGER PRIMARY KEY AUTOINCREMENT, "
                       "name TEXT NOT NULL, "
                       "phone TEXT, "
                       "email TEXT);";
+
+    //create the room_details table
+    const char* RoomDetails = "CREATE TABLE IF NOT EXISTS RoomDetails ("
+                       "room_id INTEGER PRIMARY KEY AUTOINCREMENT,"
+                        "room_number INTEGER NOT NULL,"
+                        "room_type TEXT NOT NULL,"
+                        "room_status TEXT NOT NULL);";
+
+                    
+    //guest
     char* errMsg = nullptr;
-    int rc = sqlite3_exec(db, sql, nullptr, nullptr, &errMsg);
+    int rc = sqlite3_exec(db, sqlGuest, nullptr, nullptr, &errMsg);
     if (rc != SQLITE_OK) {
-        std::cerr << "Error creating table: " << errMsg << std::endl;
+        cerr << "Error creating guest table: " << errMsg << endl;
         sqlite3_free(errMsg);
         return false;
     }
+    
+    //room_details
+    rc = sqlite3_exec(db, RoomDetails, nullptr, nullptr, &errMsg);
+    if(rc != SQLITE_OK ) {
+        cerr << "Error creatinng room table: " << errMsg << endl;
+        sqlite3_free(errMsg);
+        return false;
+    }
+
     std::cout << "Table created successfully!" << std::endl;
     return true;
 }
 
-// Insert a guest into the Guests table
+ // Insert a guest into the Guests table
 bool Database::insertGuest(const std::string& name, const std::string& phone, const std::string& email) {
-    const char* sql = "INSERT INTO Guests (name, phone, email) VALUES (?, ?, ?);";
+    const char* sqlGuest = "INSERT INTO Guests (name, phone, email) VALUES (?, ?, ?);";
     sqlite3_stmt* stmt;
-    int rc = sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr);
+    int rc = sqlite3_prepare_v2(db, sqlGuest, -1, &stmt, nullptr);
     if (rc != SQLITE_OK) {
-        std::cerr << "Failed to prepare statement: " << sqlite3_errmsg(db) << std::endl;
+        cerr << "Failed to prepare statement: " << sqlite3_errmsg(db) << endl;
         return false;
     }
 
@@ -66,7 +88,7 @@ bool Database::insertGuest(const std::string& name, const std::string& phone, co
 
     rc = sqlite3_step(stmt);
     if (rc != SQLITE_DONE) {
-        std::cerr << "Execution failed: " << sqlite3_errmsg(db) << std::endl;
+        cerr << "Execution failed: " << sqlite3_errmsg(db) << endl;
         sqlite3_finalize(stmt);
         return false;
     }
@@ -75,6 +97,12 @@ bool Database::insertGuest(const std::string& name, const std::string& phone, co
     sqlite3_finalize(stmt);
     return true;
 }
+
+
+//Insert room details into the table
+
+
+
 
 // Print all guests from the Guests table
 void Database::printGuests() {
