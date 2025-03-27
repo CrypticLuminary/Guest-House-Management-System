@@ -46,9 +46,9 @@ bool Database::createTable() {
     //create the room_details table
     const char* RoomDetails = "CREATE TABLE IF NOT EXISTS RoomDetails ("
                        "room_id INTEGER PRIMARY KEY AUTOINCREMENT,"
-                        "room_number INTEGER NOT NULL,"
+                        "room_no INTEGER NOT NULL,"
                         "room_type TEXT NOT NULL,"
-                        "room_status TEXT NOT NULL);";
+                        "status TEXT NOT NULL);";
 
                     
     //guest
@@ -73,7 +73,7 @@ bool Database::createTable() {
 }
 
  // Insert a guest into the Guests table
-bool Database::insertGuest(const std::string& name, const std::string& phone, const std::string& email) {
+bool Database::insertGuest(const string& name, const string& phone, const string& email) {
     const char* sqlGuest = "INSERT INTO Guests (name, phone, email) VALUES (?, ?, ?);";
     sqlite3_stmt* stmt;
     int rc = sqlite3_prepare_v2(db, sqlGuest, -1, &stmt, nullptr);
@@ -100,32 +100,79 @@ bool Database::insertGuest(const std::string& name, const std::string& phone, co
 
 
 //Insert room details into the table
+bool Database::insertRoomDetails(const int& room_no, const string& room_type, const string& status) {
+    const char* RoomDetails = "INSERT INTO RoomDetails (room_no, room_type, status) VALUES (?, ?, ?);";
+    sqlite3_stmt* stmt;
+    int rc = sqlite3_prepare_v2(db, RoomDetails, -1, &stmt, nullptr);
+    if (rc != SQLITE_OK) {
+        cerr << "Failed to prepare statement: " << sqlite3_errmsg(db) << endl;
+        return false;
+    }
 
+    sqlite3_bind_int(stmt, 1, room_no);
+    sqlite3_bind_text(stmt, 2, room_type.c_str(), -1, SQLITE_STATIC);
+    sqlite3_bind_text(stmt, 3, status.c_str(), -1, SQLITE_STATIC);
+
+    rc = sqlite3_step(stmt);
+    if (rc != SQLITE_DONE) {
+        cerr << "Execution failed: " << sqlite3_errmsg(db) << endl;
+        sqlite3_finalize(stmt);
+        return false;
+    }
+
+    std::cout << "Room_Details inserted successfully!" << std::endl;
+    sqlite3_finalize(stmt);
+    return true;
+}
 
 
 
 // Print all guests from the Guests table
 void Database::printGuests() {
-    const char* sql = "SELECT guest_id, name, phone, email FROM Guests;";
+    const char* guestsql = "SELECT guest_id, name, phone, email FROM Guests;";
     sqlite3_stmt* stmt;
-    int rc = sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr);
+    int rc = sqlite3_prepare_v2(db, guestsql, -1, &stmt, nullptr);
     if (rc != SQLITE_OK) {
-        std::cerr << "Failed to prepare statement: " << sqlite3_errmsg(db) << std::endl;
+        cerr << "Failed to prepare statement: " << sqlite3_errmsg(db) << endl;
         return;
     }
 
-    std::cout << "Guests:" << std::endl;
+    cout << "Guests:" << endl;
     while ((rc = sqlite3_step(stmt)) == SQLITE_ROW) {
         int guest_id = sqlite3_column_int(stmt, 0);
         const unsigned char* name = sqlite3_column_text(stmt, 1);
         const unsigned char* phone = sqlite3_column_text(stmt, 2);
         const unsigned char* email = sqlite3_column_text(stmt, 3);
 
-        std::cout << "ID: " << guest_id
+        cout << "ID: " << guest_id
                   << ", Name: " << name
                   << ", Phone: " << phone
                   << ", Email: " << email << std::endl;
     }
 
+    sqlite3_finalize(stmt);
+}
+
+void Database::printRoomDetails() {
+    const char* roomDetails = "SELECT room_id, room_no, room_type, status FROM RoomDetails;";
+    sqlite3_stmt* stmt;
+    int rc = sqlite3_prepare_v2(db, roomDetails, -1, &stmt, nullptr);
+    if (rc != SQLITE_OK) {
+        cerr << "Failed to prepare statement: " << sqlite3_errmsg(db) << endl;
+        return;
+    }
+    
+    cout << "Room_Details:" << endl;
+    while ((rc = sqlite3_step(stmt)) == SQLITE_ROW) {
+        int room_id = sqlite3_column_int(stmt, 0);
+        int room_no = sqlite3_column_int(stmt, 1);
+        const unsigned char* room_type = sqlite3_column_text(stmt, 2);
+        const unsigned char* status = sqlite3_column_text(stmt, 3);
+
+        cout << "ID: " << room_id
+             << ", Room Number: " << room_no
+             << ", Room Type: " << room_type
+             << ", Status: " << status << endl;
+    }
     sqlite3_finalize(stmt);
 }

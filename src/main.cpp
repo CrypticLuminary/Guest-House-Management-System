@@ -28,8 +28,13 @@ int main() {
     db.insertGuest("John Doe", "1234567890", "john.doe@example.com");
     db.insertGuest("Jane Smith", "9876543210", "jane.smith@example.com");
 
+
+    db.insertRoomDetails(200, "single bed", "reserve");
+    db.insertRoomDetails(201, "double bed", "available");
+
     // Print all guests
     db.printGuests();
+    db.printRoomDetails();
 
     // Close the database
     db.close();
