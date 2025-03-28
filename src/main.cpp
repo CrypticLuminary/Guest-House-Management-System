@@ -25,16 +25,23 @@ int main() {
     }
 
     // Insert a guest
-    db.insertGuest("John Doe", "1234567890", "john.doe@example.com");
-    db.insertGuest("Jane Smith", "9876543210", "jane.smith@example.com");
+    string name, email;
+    string phone_no;
+    
+    // cout << "Enter the name phone_no and email of the person :: ";
+    // cin >> name >> phone_no >> email ;
+    // cout << "\n";
+
+    // db.insertGuest(name, phone_no, email);
 
 
-    db.insertRoomDetails(200, "single bed", "reserve");
-    db.insertRoomDetails(201, "double bed", "available");
+
+    // db.insertRoomDetails(200, "single bed", "reserve");
+    // db.insertRoomDetails(201, "double bed", "available");
 
     // Print all guests
-    db.printGuests();
-    db.printRoomDetails();
+    // db.printGuests();
+    // db.printRoomDetails();
 
     // Close the database
     db.close();
