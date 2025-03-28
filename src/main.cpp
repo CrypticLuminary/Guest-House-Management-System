@@ -24,26 +24,74 @@ int main() {
         return 1;
     }
 
-    // Insert a guest
-    string name, email;
-    string phone_no;
+
+    //_______________TESTING INSERTING GUEST INFO_______________
+   string fname, lname, contact_info, email, id_proof, address;
+
+    // Taking input from the user
+    cout << "Enter First Name: ";
+    cin >> fname;
+    cout << "Enter Last Name: ";
+    cin >> lname;
+    cout << "Enter Contact Info: ";
+    cin >> contact_info;
+    cout << "Enter Email: ";
+    cin >> email;
+    cin.ignore(); // To consume the leftover newline character
+    cout << "Enter ID Proof Type (e.g., Passport, License): ";
+    getline(cin, id_proof);
+    cout << "Enter Address: ";
+    getline(cin, address);
+
+    // Call the function
+    db.insertGuest(fname, lname, contact_info, email, id_proof, address);
+
+
+    //______________TESTING INSERTING ROOM INFO_________________________
+    // int room_no;
+    // string room_type, price_per_night, status;
+
+    // // Taking input from the user
+    // cout << "Enter Room Number: ";
+    // cin >> room_no;
+    // cin.ignore(); // To consume the leftover newline character
+
+    // cout << "Enter Room Type (e.g., Single, Double, Suite): ";
+    // getline(cin, room_type);
+
+    // cout << "Enter Price per Night (e.g., 100, 150.50): ";
+    // getline(cin, price_per_night);
+
+    // cout << "Enter Room Status (Available/Booked): ";
+    // getline(cin, status);
+
+    // // Call the function
+    // db.insertRoomDetails(room_no, room_type, price_per_night, status);
+
     
-    // cout << "Enter the name phone_no and email of the person :: ";
-    // cin >> name >> phone_no >> email ;
-    // cout << "\n";
+//__________________________TESTING INSERTING ADMIN DETAILS___________________
+// string username, password, email, role;
 
-    // db.insertGuest(name, phone_no, email);
+// // Taking input from the user
+// cout << "Enter Username: ";
+// cin >> username;
+
+// cout << "Enter Password: ";
+// cin >> password;
+
+// cout << "Enter Email: ";
+// cin >> email;
+// cin.ignore(); // To consume the leftover newline character
+
+// cout << "Enter Role (e.g., Manager, Staff): ";
+// getline(cin, role);
+
+// // Call the function
+// db.insertAdmin(username, password, email, role);
 
 
+db.printGuests();
 
-    // db.insertRoomDetails(200, "single bed", "reserve");
-    // db.insertRoomDetails(201, "double bed", "available");
-
-    // Print all guests
-    // db.printGuests();
-    // db.printRoomDetails();
-
-    // Close the database
     db.close();
 
     return 0;
