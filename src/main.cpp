@@ -34,5 +34,8 @@ int main() {
     // Close the database
     db.close();
 
+std::cout << "hi";
+
+
     return 0;
 }
