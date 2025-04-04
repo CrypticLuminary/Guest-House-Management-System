@@ -6,6 +6,8 @@
 #include "../include/reports.h"
 #include "../include/admin.h"
 #include "../include/housekeeping.h"
+#include "../include/validator.h"
+#include "../include/user.h"
 
 
 
@@ -26,25 +28,25 @@ int main() {
 
 
     //_______________TESTING INSERTING GUEST INFO_______________
-   string fname, lname, contact_info, email, id_proof, address;
+//    string fname, lname, contact_info, email, id_proof, address;
 
-    // Taking input from the user
-    cout << "Enter First Name: ";
-    cin >> fname;
-    cout << "Enter Last Name: ";
-    cin >> lname;
-    cout << "Enter Contact Info: ";
-    cin >> contact_info;
-    cout << "Enter Email: ";
-    cin >> email;
-    cin.ignore(); // To consume the leftover newline character
-    cout << "Enter ID Proof Type (e.g., Passport, License): ";
-    getline(cin, id_proof);
-    cout << "Enter Address: ";
-    getline(cin, address);
+//     // Taking input from the user
+//     cout << "Enter First Name: ";
+//     cin >> fname;
+//     cout << "Enter Last Name: ";
+//     cin >> lname;
+//     cout << "Enter Contact Info: ";
+//     cin >> contact_info;
+//     cout << "Enter Email: ";
+//     cin >> email;
+//     cin.ignore(); // To consume the leftover newline character
+//     cout << "Enter ID Proof Type (e.g., Passport, License): ";
+//     getline(cin, id_proof);
+//     cout << "Enter Address: ";
+//     getline(cin, address);
 
-    // Call the function
-    db.insertGuest(fname, lname, contact_info, email, id_proof, address);
+//     // Call the function
+//     db.insertGuest(fname, lname, contact_info, email, id_proof, address);
 
 
     //______________TESTING INSERTING ROOM INFO_________________________
@@ -90,12 +92,15 @@ int main() {
 // db.insertAdmin(username, password, email, role);
 
 
-db.printGuests();
+
+// _____________________login with email VALIDATOR __________________________
+
+User u;
+u.loginpage();
+
+// db.printGuests();
 
     db.close();
-
-std::cout << "hi";
-
 
     return 0;
 }
