@@ -10,7 +10,7 @@
 #include "../include/receptionist.h" 
 =======
 #include "../include/validator.h"
-#include "../include/user.h"gi
+#include "../include/user.h"
 
 >>>>>>> 69b638eb2b762ef57427847e53fc7863dd4c0668
 
