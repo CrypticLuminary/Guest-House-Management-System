@@ -1,4 +1,5 @@
 #include <iostream>
+#include<string.h>
 #include "../include/database.h"
 #include "../include/guest.h"
 #include "../include/booking.h"
@@ -7,44 +8,44 @@
 #include "../include/admin.h"
 #include "../include/housekeeping.h"
 
-
+using namespace std;
 
 int main() {
     // Create a Database object
-    Database db("guest_house.db");
+    // Database db("guest_house.db");
 
-    // Open the database
-    if (!db.open()) {
-        return 1;
-    }
+    // // Open the database
+    // if (!db.open()) {
+    //     return 1;
+    // }
 
-    // Create the Guests table
-    if (!db.createTable()) {
-        db.close();
-        return 1;
-    }
+    // // Create the Guests table
+    // if (!db.createTable()) {
+    //     db.close();
+    //     return 1;
+    // }
 
 
     //_______________TESTING INSERTING GUEST INFO_______________
-   string fname, lname, contact_info, email, id_proof, address;
+//    string fname, lname, contact_info, email, id_proof, address;
 
     // Taking input from the user
-    cout << "Enter First Name: ";
-    cin >> fname;
-    cout << "Enter Last Name: ";
-    cin >> lname;
-    cout << "Enter Contact Info: ";
-    cin >> contact_info;
-    cout << "Enter Email: ";
-    cin >> email;
-    cin.ignore(); // To consume the leftover newline character
-    cout << "Enter ID Proof Type (e.g., Passport, License): ";
-    getline(cin, id_proof);
-    cout << "Enter Address: ";
-    getline(cin, address);
+    // cout << "Enter First Name: ";
+    // cin >> fname;
+    // cout << "Enter Last Name: ";
+    // cin >> lname;
+    // cout << "Enter Contact Info: ";
+    // cin >> contact_info;
+    // cout << "Enter Email: ";
+    // cin >> email;
+    // cin.ignore(); // To consume the leftover newline character
+    // cout << "Enter ID Proof Type (e.g., Passport, License): ";
+    // getline(cin, id_proof);
+    // cout << "Enter Address: ";
+    // getline(cin, address);
 
     // Call the function
-    db.insertGuest(fname, lname, contact_info, email, id_proof, address);
+    // db.insertGuest(fname, lname, contact_info, email, id_proof, address);
 
 
     //______________TESTING INSERTING ROOM INFO_________________________
@@ -89,12 +90,33 @@ int main() {
 // // Call the function
 // db.insertAdmin(username, password, email, role);
 
+// db.printGuests();
 
-db.printGuests();
 
-    db.close();
+// _____________________login with email VALIDATOR __________________________
 
-std::cout << "hi";
+Admin A;
+int roomNo;
+string roomType;
+int price;
+
+cout << " enter room no :: " << endl;
+cin >> roomNo;
+cout<< " Enter room type ::"<<endl;
+cin>>roomType;
+cout<<" Enter price per night ::"<<endl;
+cin>>price;
+A.roomDetains(roomNo,roomType,price);
+
+
+// User u;
+// u.loginpage();
+
+// // db.printGuests();
+
+//     db.close();
+
+// std::cout << "hi";
 
 
     return 0;

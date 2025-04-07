@@ -1,5 +1,7 @@
 #include "../include/admin.h"
+#include <iostream>
+#include<string.h>
+using namespace std;
 
-Admin::Admin(std::string username, std::string password) {}
-
-bool Admin::login() { return true; }
+void Admin::roomDetains(int roomNo,const string roomType, int price){
+}

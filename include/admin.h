@@ -1,13 +1,13 @@
 #ifndef ADMIN_H
 #define ADMIN_H
-
-#include <string>
+#include<iostream>
+#include <string.h>
+using namespace std;
 
 class Admin {
 public:
-    Admin(std::string username, std::string password);
-    bool login();
     
+void roomDetains(int roomNo, string roomType, int price);
 };
 
 #endif
