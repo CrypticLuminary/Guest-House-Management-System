@@ -9,7 +9,6 @@ void User::loginpage(){
     while(true){
     cout<<"enter your email\n";
     cin>>email;
-    if(v.isValidEmail(email)){
     cout<<"enter your password\n";
     while ((ch = _getch()) != '\r') // '\r' is the Enter key
     {
@@ -27,11 +26,15 @@ void User::loginpage(){
             cout << '*'; // Mask the character
         }
     }
-    break;
+    cout<<endl;
+    if(v.isValidEmail(email)){
+        cout<<"email is valid\n";
+        break;
     }
     else{
-        cout<<"this email cant be used\n";
+        cout<<"email is not valid\n";
     }
 }
 }
+
 
