@@ -19,13 +19,12 @@ bool Validate::isValidNumber(const string& number)
     }
     else{
         if(number[0]=='9'&& number.length() == 10){
-            cout<<"Valid number";
+            // cout<<"Valid number";
             return true;
         }
         else{
-            cout<<"Invalid number: Contains non-digit characters and number is samlles than 10 digits";
-            return true;
+            cout<<"Invalid number";
+            return false;
  }
-
 }
 }
