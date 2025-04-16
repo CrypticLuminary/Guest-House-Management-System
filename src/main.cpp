@@ -105,7 +105,7 @@ int main() {
 // db.searchGuest("samri123@gmail.com", "", "", "");
 
 //##____________________________TESTING THE UPDATE ADMIN DATA__________________
-db.updateAdmin(1,"sitaula", "praj123@gmail.com", "pass");
+// db.updateAdmin(1,"sitaula", "praj123@gmail.com", "pass");
 
 // db.printGuests();
 
