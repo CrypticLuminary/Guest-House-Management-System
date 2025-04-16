@@ -28,7 +28,7 @@ int main() {
 
 
     //_______________TESTING INSERTING GUEST INFO_______________
-//    string fname, lname, contact_info, email, id_proof, address, status;
+//    string fname, lname, contact_info, email, id_proof, address, status,relationship;
 //    int room_no;
 
 //     // Taking input from the user
@@ -45,6 +45,8 @@ int main() {
 //     getline(cin, id_proof);
 //     cout << "Enter Address: ";
 //     getline(cin, address);
+//     cout << "Enter relationship: ";
+//     getline(cin, relationship);
 //     cout << "Enter room_no: ";
 //     cin >> room_no;
 //     cin.ignore();
@@ -52,7 +54,7 @@ int main() {
 //     getline(cin, status);
 
 //     // Call the function
-//     int gid = db.insertGuest(fname, lname, contact_info, email, id_proof, address);
+//     int gid = db.insertGuest(fname, lname, contact_info, email, id_proof,relationship, address);
 //     int rid = db.getRoomID(room_no);
 //     db.booking( gid, rid, status);
 
@@ -102,12 +104,24 @@ int main() {
 
 //______________________________SEARCHING GUEST INFO___________________________
 // cout << "\nSearching ..." << endl;
-// db.searchGuest("samri123@gmail.com", "", "", "");
+// db.searchGuest("", "9827981557", "", "");
 
 //##____________________________TESTING THE UPDATE ADMIN DATA__________________
+
 // db.updateAdmin(1,"sitaula", "praj123@gmail.com", "pass");
 
+// db.updateAdmin(1,"", "", "pass");
+
+//##   ________________________TESTING UPDATING GUEST DATA______________________
+// vector <int> ID = db.searchGuest("","9827981557");      
+
+// db.updateGuest(ID,"qwerty","","");
+
+
 // db.printGuests();
+// db.searchRoom(0, "single", "", "Available");
+// TESTING SEARCH FOR ROOM DETAILS
+
 
     db.close();
 

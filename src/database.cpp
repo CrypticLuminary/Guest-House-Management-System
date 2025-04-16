@@ -2,6 +2,7 @@
 #include "../include/sqlite3.h"
 #include <iostream>
 #include<string>
+#include <vector>
 using namespace std;
 
 // Constructor
@@ -46,6 +47,7 @@ bool Database::createTable() {
                         "contact_info TEXT UNIQUE NOT NULL, "
                         "email TEXT NOT NULL UNIQUE, "
                         "id_proof TEXT  NULL, "
+                        "relationship TEXT CHECK(relationship IN('single','married')), "
                         "address TEXT NULL);";
 
     //create the room_details table
@@ -78,6 +80,7 @@ bool Database::createTable() {
                         "last_name VARCHAR(100) NOT NULL, "
                         "contact_info TEXT UNIQUE NOT NULL, "
                         "email TEXT NOT NULL UNIQUE, "
+                        "relationship TEXT CHECK(relationship IN('single','married')), "
                         "id_proof TEXT  NULL, "
                         "address TEXT NULL);";
 
@@ -256,8 +259,8 @@ bool Database::createTable() {
 }
 
 // GUEST_DETAILS
-int Database::insertGuest(const string& fname, const string& lname, const string& contact_info, const string& email, const string& id_proof, const string& address) {
-    const char* sqlGuest = "INSERT INTO Guests (first_name, last_name, contact_info, email, id_proof, address) VALUES (?, ?, ?, ?, ?, ?);";
+int Database::insertGuest(const string& fname, const string& lname, const string& contact_info, const string& email, const string& id_proof, const string& relationship, const string& address) {
+    const char* sqlGuest = "INSERT INTO Guests (first_name, last_name, contact_info, email, id_proof, relationship, address) VALUES (?, ?, ?, ?, ?, ?, ?);";
     sqlite3_stmt* stmt;
     int rc = sqlite3_prepare_v2(db, sqlGuest, -1, &stmt, nullptr);
     if (rc != SQLITE_OK) {
@@ -270,7 +273,8 @@ int Database::insertGuest(const string& fname, const string& lname, const string
     sqlite3_bind_text(stmt, 3, contact_info.c_str(), -1, SQLITE_STATIC);
     sqlite3_bind_text(stmt, 4, email.c_str(), -1, SQLITE_STATIC);
     sqlite3_bind_text(stmt, 5, id_proof.c_str(), -1, SQLITE_STATIC);
-    sqlite3_bind_text(stmt, 6, address.c_str(), -1, SQLITE_STATIC);
+    sqlite3_bind_text(stmt, 6, relationship.c_str(), -1, SQLITE_STATIC);
+    sqlite3_bind_text(stmt, 7, address.c_str(), -1, SQLITE_STATIC);
 
     rc = sqlite3_step(stmt);
     if (rc != SQLITE_DONE) {
@@ -285,8 +289,8 @@ int Database::insertGuest(const string& fname, const string& lname, const string
 }
 
 // STAFF_DETAILS
-bool Database::insertStaffDetails(const string& fname, const string& lname, const string& contact_info, const string& email, const string& id_proof, const string& address) {
-    const char* sqlStaffDetails = "INSERT INTO StaffDetails (first_name, last_name, contact_info, email, id_proof, address) VALUES (?, ?, ?, ?, ?, ?);";
+bool Database::insertStaffDetails(const string& fname, const string& lname, const string& contact_info, const string& email, const string& id_proof, const string& relationship, const string& address) {
+    const char* sqlStaffDetails = "INSERT INTO StaffDetails (first_name, last_name, contact_info, email, id_proof, address) VALUES (?, ?, ?, ?, ?, ?, ?);";
     sqlite3_stmt* stmt;
     int rc = sqlite3_prepare_v2(db, sqlStaffDetails, -1, &stmt, nullptr);
     if (rc != SQLITE_OK) {
@@ -299,7 +303,8 @@ bool Database::insertStaffDetails(const string& fname, const string& lname, cons
     sqlite3_bind_text(stmt, 3, contact_info.c_str(), -1, SQLITE_STATIC);
     sqlite3_bind_text(stmt, 4, email.c_str(), -1, SQLITE_STATIC);
     sqlite3_bind_text(stmt, 5, id_proof.c_str(), -1, SQLITE_STATIC);
-    sqlite3_bind_text(stmt, 6, address.c_str(), -1, SQLITE_STATIC);
+    sqlite3_bind_text(stmt, 6, relationship.c_str(), -1, SQLITE_STATIC);
+    sqlite3_bind_text(stmt, 7, address.c_str(), -1, SQLITE_STATIC);
 
     rc = sqlite3_step(stmt);
     if (rc != SQLITE_DONE) {
@@ -403,6 +408,8 @@ bool Database::booking (int guest_id, int room_id, const string& booking_status)
 
 
 // ##_________________________________________________UPDATIN DATA ON THE TABLE______________________________________##
+
+//ADMIN
 bool Database::updateAdmin(int admin_id, const std::string& username, const std::string& email, const std::string& password) {
     std::string sql = "UPDATE Admin SET ";
     sqlite3_stmt* stmt;
@@ -478,12 +485,121 @@ bool Database::updateAdmin(int admin_id, const std::string& username, const std:
 }
 
 
+//       _____________________UPDATING GUEST DETAILS________________ 
+
+bool Database::updateGuest(vector<int> guest_id, const string& fname, const string& lname, const string& contact_info, const string& email, const string& id_proof, const string& relationship, const string& address) {
+    std::string sql = "UPDATE Guests SET ";
+    sqlite3_stmt* stmt;
+    bool hasUpdate = false;
+    // Add fields to update only if they are non-empty
+    if (!fname.empty()) {
+        sql += "first_name = ?, ";
+        hasUpdate = true;
+    }
+
+    if (!lname.empty()) {
+        sql += "last_name = ?, ";
+        hasUpdate = true;
+    }
+
+    if (!contact_info.empty()) {
+        sql += "contact_info = ?, ";
+        hasUpdate = true;
+    }
+
+    if (!email.empty()) {
+        sql += "email = ?, ";
+        hasUpdate = true;
+    }
+
+    if (!id_proof.empty()) {
+        sql += "id_proof = ?, ";
+        hasUpdate = true;
+    }
+
+    if (!relationship.empty()) {
+        sql += "relationship = ?, ";
+        hasUpdate = true;
+    }
+    
+    if (!address.empty()) {
+        sql += "address = ?, ";
+        hasUpdate = true;
+    }
+
+    // If no fields to update, exit early
+    if (!hasUpdate) {
+        std::cerr << "No fields to update." << std::endl;
+        return false;
+    }
+
+    // Remove the trailing comma and space
+    sql.pop_back(); // Remove the space
+    sql.pop_back(); // Remove the comma
+
+    // Add the WHERE clause to identify the admin by admin_id
+    sql += " WHERE guest_id = ?;";
+
+    // Prepare the statement
+    int rc = sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, nullptr);
+    if (rc != SQLITE_OK) {
+        std::cerr << "Failed to prepare statement: " << sqlite3_errmsg(db) << std::endl;
+        return false;
+    }
+
+    // Bind parameters dynamically
+    int paramIndex = 1;
+
+    if (!fname.empty()) {
+        sqlite3_bind_text(stmt, paramIndex++, fname.c_str(), -1, SQLITE_STATIC);
+    }
+    if (!lname.empty()) {
+        sqlite3_bind_text(stmt, paramIndex++, lname.c_str(), -1, SQLITE_STATIC);
+    }
+    if (!contact_info.empty()) {
+        sqlite3_bind_text(stmt, paramIndex++, contact_info.c_str(), -1, SQLITE_STATIC);
+    }
+    if (!email.empty()) {
+        sqlite3_bind_text(stmt, paramIndex++, email.c_str(), -1, SQLITE_STATIC);
+    }
+    if (!id_proof.empty()) {
+        sqlite3_bind_text(stmt, paramIndex++, id_proof.c_str(), -1, SQLITE_STATIC);
+    }
+    if (!relationship.empty()) {
+        sqlite3_bind_text(stmt, paramIndex++, relationship.c_str(), -1, SQLITE_STATIC);
+    }
+    if (!address.empty()) {
+        sqlite3_bind_text(stmt, paramIndex++, relationship.c_str(), -1, SQLITE_STATIC);
+    }
+
+    // Bind the admin_id for the WHERE clause
+    for(int ID: guest_id) {
+        sqlite3_bind_int(stmt, paramIndex,ID);
+    }
+   
+
+    // Execute the query
+    rc = sqlite3_step(stmt);
+    if (rc != SQLITE_DONE) {
+        std::cerr << "Execution failed: " << sqlite3_errmsg(db) << std::endl;
+        sqlite3_finalize(stmt);
+        return false;
+    }
+
+    std::cout << "Admin details updated successfully!" << std::endl;
+
+    // Finalize the statement
+    sqlite3_finalize(stmt);
+    return true;
+}
 
 //##___________________________________________________SEARCHING DATA ON THE TABLE_____________________________________##
 
 //searching guest info
-void Database::searchGuest(const string&email, const string& contact_info, const string& check_in_date, const string& check_out_date, int room_no, const string& room_type)
-{
+vector<int> Database::searchGuest(const string&email, const string& contact_info, const string& check_in_date, const string& check_out_date, int room_no, const string& room_type)
+{   
+
+    vector <int> Guest_ID;
     string sql = "SELECT Guests.*, Booking.check_in_date, Booking.check_out_date, RoomDetails.room_no, RoomDetails.room_type "
                         "FROM Guests "
                         "JOIN Booking ON Guests.guest_id = Booking.guest_id "
@@ -518,7 +634,7 @@ void Database::searchGuest(const string&email, const string& contact_info, const
     }
 
     if(!room_type.empty()) {
-        sql += "  RoomDetails.room_type = ?";
+        sql += " AND RoomDetails.room_type = ?";
         hasConditions = true;
     }
 
@@ -526,14 +642,14 @@ void Database::searchGuest(const string&email, const string& contact_info, const
     if(!hasConditions) {
         cerr << "No search criteria provided." << endl;
         
-        return;
+        return Guest_ID;
     }
 
     sqlite3_stmt* stmt;
     int rc = sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, nullptr);
     if(rc != SQLITE_OK) {
         cerr << "Failed to prepare statement: " << sqlite3_errmsg(db) << endl;
-        return;
+        return Guest_ID;
     }
 
 
@@ -588,7 +704,7 @@ void Database::searchGuest(const string&email, const string& contact_info, const
         // << ", Check-Out Date: " << check_out_date_col
         << ", Room No: " << room_no_col
         << ", Room Type: " << room_type_col << endl;
-
+        Guest_ID.push_back(guest_id);
     }
 
     if (rc != SQLITE_DONE && rc != SQLITE_ROW) {
@@ -596,6 +712,84 @@ void Database::searchGuest(const string&email, const string& contact_info, const
     }
 
 
+    sqlite3_finalize(stmt);
+    return Guest_ID;
+}
+
+//   __________________SEARCHING ROOM DETAILS__________________________________
+
+void Database::searchRoom(const int& room_no, const std::string& room_type, const std::string& price_per_night, const std::string& status) {
+
+    std::string sql = "SELECT * FROM RoomDetails WHERE 1=1"; // "1=1" is a placeholder to simplify appending conditions
+    sqlite3_stmt* stmt;
+    bool hasFilters = false;
+
+    // Add filters dynamically based on provided parameters
+    if (room_no > 0) { // Check if room_no is valid (greater than 0)
+        sql += " AND room_no = ?";
+        hasFilters = true;
+    }
+    if (!room_type.empty()) { // Check if room_type is provided
+        sql += " AND room_type = ?";
+        hasFilters = true;
+    }
+    if (!price_per_night.empty()) { // Check if price_per_night is provided
+        sql += " AND price_per_night = ?";
+        hasFilters = true;
+    }
+    if (!status.empty()) { // Check if status is provided
+        sql += " AND status = ?";
+        hasFilters = true;
+    }
+
+    // If no filters are provided, notify the user
+    if (!hasFilters) {
+        std::cout << "No search criteria provided. Returning all rooms." << std::endl;
+    }
+
+    // Prepare the SQL statement
+    int rc = sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, nullptr);
+    if (rc != SQLITE_OK) {
+        std::cerr << "Failed to prepare statement: " << sqlite3_errmsg(db) << std::endl;
+        return;
+    }
+
+    // Bind parameters dynamically
+    int paramIndex = 1;
+    if (room_no > 0) {
+        sqlite3_bind_int(stmt, paramIndex++, room_no);
+    }
+    if (!room_type.empty()) {
+        sqlite3_bind_text(stmt, paramIndex++, room_type.c_str(), -1, SQLITE_STATIC);
+    }
+    if (!price_per_night.empty()) {
+        sqlite3_bind_text(stmt, paramIndex++, price_per_night.c_str(), -1, SQLITE_STATIC);
+    }
+    if (!status.empty()) {
+        sqlite3_bind_text(stmt, paramIndex++, status.c_str(), -1, SQLITE_STATIC);
+    }
+
+    // Execute the query and print results
+    std::cout << "Search Results:" << std::endl;
+    while ((rc = sqlite3_step(stmt)) == SQLITE_ROW) {
+        int room_id = sqlite3_column_int(stmt, 0);
+        int room_number = sqlite3_column_int(stmt, 1);
+        const unsigned char* roomType = sqlite3_column_text(stmt, 2);
+        const unsigned char* pricePerNight = sqlite3_column_text(stmt, 3);
+        const unsigned char* roomStatus = sqlite3_column_text(stmt, 4);
+
+        std::cout << "ID: " << room_id
+                  << ", Room Number: " << room_number
+                  << ", Room Type: " << (roomType ? reinterpret_cast<const char*>(roomType) : "N/A")
+                  << ", Price Per Night: " << (pricePerNight ? reinterpret_cast<const char*>(pricePerNight) : "N/A")
+                  << ", Status: " << (roomStatus ? reinterpret_cast<const char*>(roomStatus) : "N/A") << std::endl;
+    }
+
+    if (rc != SQLITE_DONE && rc != SQLITE_ROW) {
+        std::cerr << "Execution failed: " << sqlite3_errmsg(db) << std::endl;
+    }
+
+    // Finalize the statement
     sqlite3_finalize(stmt);
 }
 
@@ -606,7 +800,7 @@ void Database::searchGuest(const string&email, const string& contact_info, const
 // ##__________________________________________________PRINTING DATA FROM TABLE_________________________________________##
 
 
-// Print all guests from the Guests table
+// _____________________________PRINTING ALL THE GUEST INFO_______________________
 void Database::printGuests() {
     const char* guestsql = "SELECT * FROM Guests;";
     sqlite3_stmt* stmt;
@@ -638,6 +832,7 @@ void Database::printGuests() {
     sqlite3_finalize(stmt);
 }
 
+//_________________________________PRINTING ALL THE ROOM DETAILS_______________________
 void Database::printRoomDetails() {
     const char* roomDetails = "SELECT * FROM RoomDetails;";
     sqlite3_stmt* stmt;
@@ -684,4 +879,81 @@ int Database::getRoomID(int room_no) {
     }
     sqlite3_finalize(stmt);
     return room_id;
+}
+
+
+//__________________________________DELETE FUNCTIONALITY IN DATABASE____________________________________________
+
+//GUEST
+bool Database::deleteGuest(int guest_id) {
+        string sql  = "DELETE FROM Guests WHERE id = ?;";
+        sqlite3_stmt* stmt;
+        int rc = sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, nullptr);
+        if(rc != SQLITE_OK) {
+            cerr << "Failed to prepare statement (delete_guest): " << sqlite3_errmsg(db) << endl;
+            return false;
+        }
+
+        sqlite3_bind_int(stmt, 1, guest_id);
+        rc = sqlite3_step(stmt);
+        if(rc != SQLITE_DONE) {
+            cerr << "Deletion of guest failed: " << sqlite3_errmsg(db) << endl;
+            sqlite3_finalize(stmt);
+            return false;
+        }
+        cout << "Guest with ID " << guest_id << " has been deleted successfully!" << endl;
+        sqlite3_finalize(stmt);
+        return true;
+    
+}
+
+//ROOM
+bool Database::deleteRoom(int room_id) {
+        string sql  = "DELETE FROM RoomDetails WHERE id = ?;";
+        sqlite3_stmt* stmt;
+        int rc = sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, nullptr);
+        if(rc != SQLITE_OK) {
+            cerr << "Failed to prepare statement (delete_room): " << sqlite3_errmsg(db) << endl;
+            return false;
+        }
+
+        sqlite3_bind_int(stmt, 1, room_id);
+        rc = sqlite3_step(stmt);
+        if(rc != SQLITE_DONE) {
+            cerr << "Deletion of room failed: " << sqlite3_errmsg(db) << endl;
+            sqlite3_finalize(stmt);
+            return false;
+        }
+        cout << "Room with ID " << room_id << " has been deleted successfully!" << endl;
+        sqlite3_finalize(stmt);
+        return true;
+    
+}
+
+//BOOKING
+bool Database::deleteBooking(int booking_id) {
+    const char* sqlDelete = "DELETE FROM Booking WHERE booking_id = ?;";
+    sqlite3_stmt* stmt;
+    int rc = sqlite3_prepare_v2(db, sqlDelete, -1, &stmt, nullptr);
+    if (rc != SQLITE_OK) {
+        cerr << "Failed to prepare statement: " << sqlite3_errmsg(db) << endl;
+        return false;
+    }
+
+   
+    sqlite3_bind_int(stmt, 1, booking_id);
+
+    
+    rc = sqlite3_step(stmt);
+    if (rc != SQLITE_DONE) {
+        cerr << "Execution failed: " << sqlite3_errmsg(db) << endl;
+        sqlite3_finalize(stmt);
+        return false;
+    }
+
+    cout << "Booking with ID " << booking_id << " deleted successfully!" << endl;
+
+   
+    sqlite3_finalize(stmt);
+    return true;
 }
