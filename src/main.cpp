@@ -12,18 +12,18 @@ using namespace std;
 
 int main() {
     // Create a Database object
-    // Database db("guest_house.db");
+    Database db("guest_house.db");
 
-    // // Open the database
-    // if (!db.open()) {
-    //     return 1;
-    // }
+    // Open the database
+    if (!db.open()) {
+        return 1;
+    }
 
-    // // Create the Guests table
-    // if (!db.createTable()) {
-    //     db.close();
-    //     return 1;
-    // }
+    // Create the Guests table
+    if (!db.createTable()) {
+        db.close();
+        return 1;
+    }
 
 
     //_______________TESTING INSERTING GUEST INFO_______________
@@ -95,18 +95,43 @@ int main() {
 
 // _____________________login with email VALIDATOR __________________________
 
-Admin A;
-int roomNo;
-string roomType;
-int price;
+// Admin A;
+// int roomNo;
+// string roomType;
+// int price;
+Admin admin;
+admin.setAdminInfo(1, "admin_user", "Manager");
 
-cout << " enter room no :: " << endl;
-cin >> roomNo;
-cout<< " Enter room type ::"<<endl;
-cin>>roomType;
-cout<<" Enter price per night ::"<<endl;
-cin>>price;
-A.roomDetains(roomNo,roomType,price);
+// Test room management
+cout << "\nAdding rooms..." << endl;
+admin.addRoom(db, 101, "Deluxe", 150.00);
+admin.addRoom(db, 102, "Standard", 100.00);
+admin.addRoom(db, 103, "Suite", 250.00);
+
+cout << "\nAll rooms:" << endl;
+admin.viewAllRooms(db);
+
+ cout << "\nUpdating room 102..." << endl;
+// admin.updateRoom(db, 2, 102, "Superior", 125.00); 
+cout << "\nAll rooms after update:" << endl;
+admin.viewAllRooms(db);
+
+// cout << "\nDeleting room 103..." << endl;
+// admin.deleteRoom(db, 3); 
+
+cout << "\nFinal room list:" << endl;
+admin.viewAllRooms(db);
+
+db.close();
+return (0);
+}
+// cout << " enter room no :: " << endl;
+// cin >> roomNo;
+// cout<< " Enter room type ::"<<endl;
+// cin>>roomType;
+// cout<<" Enter price per night ::"<<endl;
+// cin>>price;
+// A.roomDetains(roomNo,roomType,price);
 
 
 // User u;
@@ -119,5 +144,4 @@ A.roomDetains(roomNo,roomType,price);
 // std::cout << "hi";
 
 
-    return 0;
-}
+  

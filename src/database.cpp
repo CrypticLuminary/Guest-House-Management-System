@@ -330,11 +330,13 @@ void Database::printRoomDetails() {
         int room_id = sqlite3_column_int(stmt, 0);
         int room_no = sqlite3_column_int(stmt, 1);
         const unsigned char* room_type = sqlite3_column_text(stmt, 2);
-        const unsigned char* status = sqlite3_column_text(stmt, 3);
+        double price = sqlite3_column_double(stmt, 3);
+        const unsigned char* status = sqlite3_column_text(stmt, 4); //added the status and price samri le
 
         cout << "ID: " << room_id
              << ", Room Number: " << room_no
              << ", Room Type: " << room_type
+             << ",Price:" <<price
              << ", Status: " << status << endl;
     }
     sqlite3_finalize(stmt);
