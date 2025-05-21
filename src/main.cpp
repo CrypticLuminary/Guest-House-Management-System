@@ -1,5 +1,7 @@
 #include <iostream>
 #include <string.h>
+#include <graphics.h>
+#include <winbgim.h>
 #include "../include/database.h"
 #include "../include/guest.h"
 #include "../include/booking.h"
@@ -9,7 +11,13 @@
 #include "../include/housekeeping.h"
 using namespace std;
 
+// ## ___________TTESTING GRAPHICS_______________
 
+// No Graphics will be added for this project hahahahahahaha!!(Evil laugh)
+
+
+
+//__________________________________________________
 
 int main() {
     // Create a Database object
@@ -121,6 +129,7 @@ int main() {
 // db.printGuests();
 // db.searchRoom(0, "single", "", "Available");
 // TESTING SEARCH FOR ROOM DETAILS
+
 
 
     db.close();

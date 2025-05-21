@@ -407,7 +407,7 @@ bool Database::booking (int guest_id, int room_id, const string& booking_status)
 
 
 
-// ##_________________________________________________UPDATIN DATA ON THE TABLE______________________________________##
+// ##_________________________________________________UPDATING DATA ON THE TABLE______________________________________##
 
 //ADMIN
 bool Database::updateAdmin(int admin_id, const std::string& username, const std::string& email, const std::string& password) {
