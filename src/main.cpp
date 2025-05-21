@@ -2,6 +2,7 @@
 #include <string.h>
 #include <graphics.h>
 #include <winbgim.h>
+#include<string.h>
 #include "../include/database.h"
 #include "../include/guest.h"
 #include "../include/booking.h"
@@ -15,7 +16,7 @@ using namespace std;
 
 // No Graphics will be added for this project hahahahahahaha!!(Evil laugh)
 
-
+using namespace std;
 
 //__________________________________________________
 
@@ -65,6 +66,25 @@ int main() {
 //     int gid = db.insertGuest(fname, lname, contact_info, email, id_proof,relationship, address);
 //     int rid = db.getRoomID(room_no);
 //     db.booking( gid, rid, status);
+//    string fname, lname, contact_info, email, id_proof, address;
+
+    // Taking input from the user
+    // cout << "Enter First Name: ";
+    // cin >> fname;
+    // cout << "Enter Last Name: ";
+    // cin >> lname;
+    // cout << "Enter Contact Info: ";
+    // cin >> contact_info;
+    // cout << "Enter Email: ";
+    // cin >> email;
+    // cin.ignore(); // To consume the leftover newline character
+    // cout << "Enter ID Proof Type (e.g., Passport, License): ";
+    // getline(cin, id_proof);
+    // cout << "Enter Address: ";
+    // getline(cin, address);
+
+    // Call the function
+    // db.insertGuest(fname, lname, contact_info, email, id_proof, address);
 
 
     //______________TESTING INSERTING ROOM INFO_________________________
@@ -130,9 +150,58 @@ int main() {
 // db.searchRoom(0, "single", "", "Available");
 // TESTING SEARCH FOR ROOM DETAILS
 
+// db.printGuests();
 
 
-    db.close();
+// _____________________login with email VALIDATOR __________________________
 
-    return 0;
+// Admin A;
+// int roomNo;
+// string roomType;
+// int price;
+Admin admin;
+admin.setAdminInfo(1, "admin_user", "Manager");
+
+// Test room management
+cout << "\nAdding rooms..." << endl;
+admin.addRoom(db, 101, "Deluxe", 150.00);
+admin.addRoom(db, 102, "Standard", 100.00);
+admin.addRoom(db, 103, "Suite", 250.00);
+
+cout << "\nAll rooms:" << endl;
+admin.viewAllRooms(db);
+
+ cout << "\nUpdating room 102..." << endl;
+// admin.updateRoom(db, 2, 102, "Superior", 125.00); 
+cout << "\nAll rooms after update:" << endl;
+admin.viewAllRooms(db);
+
+// cout << "\nDeleting room 103..." << endl;
+// admin.deleteRoom(db, 3); 
+
+cout << "\nFinal room list:" << endl;
+admin.viewAllRooms(db);
+
+db.close();
+return (0);
 }
+// cout << " enter room no :: " << endl;
+// cin >> roomNo;
+// cout<< " Enter room type ::"<<endl;
+// cin>>roomType;
+// cout<<" Enter price per night ::"<<endl;
+// cin>>price;
+// A.roomDetains(roomNo,roomType,price);
+
+
+// User u;
+// u.loginpage();
+
+// // db.printGuests();
+
+//     db.close();
+
+// std::cout << "hi";
+
+
+  
