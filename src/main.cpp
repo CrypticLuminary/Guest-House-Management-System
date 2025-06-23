@@ -56,34 +56,34 @@ int main()
     // g.update_reservation();
     // g.cancel_reservation();
     // g.view_reservations();
-    int choice;
-    do
-    {
-        cout << "Welcome to the Guest House Reservation Management System!" << endl;
-        cout << "Please choose an option from the menu below: " << endl;
-        cout << "1. Check availability" << endl;
-        cout << "2. View Reservations" << endl;
-        cout << "3. Cancel Reservation" << endl;
-        cout << "4. Exit" << endl;
-        cout << "Enter your choice: ";
-        cin >> choice;
-        switch (choice)
-        {
-        case 1:
-            g.check_availability();
-            break;
-        case 2:
-            g.view_reservations();
-            break;
-        case 3:
-            g.cancel_reservation();
-            break;
-        case 4:
-            cout << "Exiting the program." << endl;
-            break;
-        }
-        cout << "----------------------------------------" << endl;
-    } while (choice != 4);
+    // int choice;
+    // do
+    // {
+    //     cout << "Welcome to the Guest House Reservation Management System!" << endl;
+    //     cout << "Please choose an option from the menu below: " << endl;
+    //     cout << "1. Check availability" << endl;
+    //     cout << "2. View Reservations" << endl;
+    //     cout << "3. Cancel Reservation" << endl;
+    //     cout << "4. Exit" << endl;
+    //     cout << "Enter your choice: ";
+    //     cin >> choice;
+    //     switch (choice)
+    //     {
+    //     case 1:
+    //         g.check_availability();
+    //         break;
+    //     case 2:
+    //         g.view_reservations();
+    //         break;
+    //     case 3:
+    //         g.cancel_reservation();
+    //         break;
+    //     case 4:
+    //         cout << "Exiting the program." << endl;
+    //         break;
+    //     }
+    //     cout << "----------------------------------------" << endl;
+    // } while (choice != 4);
     //_______________TESTING INSERTING GUEST INFO_______________
 //    string fname, lname, contact_info, email, id_proof, address, status,relationship;
 //    int room_no;
@@ -232,49 +232,34 @@ int main()
 // int roomNo;
 // string roomType;
 // int price;
+
 Admin admin;
-admin.setAdminInfo(1, "admin_user", "Manager");
+admin.admin(db);
+// admin.setAdminInfo(1, "admin_user", "Manager");
 
-// Test room management
-cout << "\nAdding rooms..." << endl;
-admin.addRoom(db, 101, "Deluxe", 150.00);
-admin.addRoom(db, 102, "Standard", 100.00);
-admin.addRoom(db, 103, "Suite", 250.00);
+// // Test room management
+// cout << "\nAdding rooms..." << endl;
+// admin.addRoom(db, 101, "Deluxe", 150.00);
+// admin.addRoom(db, 102, "Standard", 100.00);
+// admin.addRoom(db, 103, "Suite", 250.00);
 
-cout << "\nAll rooms:" << endl;
-admin.viewAllRooms(db);
+// cout << "\nAll rooms:" << endl;
+// admin.viewAllRooms(db);
 
- cout << "\nUpdating room 102..." << endl;
-// admin.updateRoom(db, 2, 102, "Superior", 125.00); 
-cout << "\nAll rooms after update:" << endl;
-admin.viewAllRooms(db);
+//  cout << "\nUpdating room 102..." << endl;
+// // admin.updateRoom(db, 2, 102, "Superior", 125.00); 
+// cout << "\nAll rooms after update:" << endl;
+// admin.viewAllRooms(db);
 
-// cout << "\nDeleting room 103..." << endl;
-// admin.deleteRoom(db, 3); 
+// // cout << "\nDeleting room 103..." << endl;
+// // admin.deleteRoom(db, 3); 
 
-cout << "\nFinal room list:" << endl;
-admin.viewAllRooms(db);
+// cout << "\nFinal room list:" << endl;
+// admin.viewAllRooms(db);
 
 db.close();
 return (0);
 }
-// cout << " enter room no :: " << endl;
-// cin >> roomNo;
-// cout<< " Enter room type ::"<<endl;
-// cin>>roomType;
-// cout<<" Enter price per night ::"<<endl;
-// cin>>price;
-// A.roomDetains(roomNo,roomType,price);
-
-
-// User u;
-// u.loginpage();
-
-// // db.printGuests();
-
-//     db.close();
-
-// std::cout << "hi";
 
 
   

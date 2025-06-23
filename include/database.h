@@ -15,9 +15,12 @@ public:
     void close();
     bool createTable();
 
-    //##----------------INSERTING DATA IN TO THE TABLE--------------------------------##
+    // Getter for SQLite database handle
+    sqlite3* getDb() { return db; }
 
-    //GUEST DATA
+    //##----------------INSERTING DATA INTO THE TABLE--------------------------------##
+
+    // GUEST DATA
     int insertGuest(
         const string& fname,
         const string& lname, 
@@ -43,7 +46,7 @@ public:
         const string& password, 
         const string& email);
 
-    //STAFF LOGIN DETAIL
+    // STAFF LOGIN DETAIL
     bool insertStaff(
         const string& username, 
         const string& password, 
@@ -57,13 +60,13 @@ public:
         const string& price_per_night, 
         const string& status);
 
-    //BOOKING
-    bool booking (
+    // BOOKING
+    bool booking(
         int guest_id, 
         int room_id, 
         const string& status);
 
-    //##-----------------UP[DATIING DATA ON THE DATABASE-------------------------------##
+    //##-----------------UPDATING DATA ON THE DATABASE-------------------------------##
 
     // UPDATING ADMIN LOGIN DETAILS
     bool updateAdmin(
@@ -82,13 +85,12 @@ public:
         const string& relationship = "", 
         const string& address = "");
 
-
     //##--------------------SEARCHING DATA ON THE TABLE---------------------------------##
 
     vector<int> searchGuest(
-        const string&email = "",
-        const string& contact_info="",
-        const string& check_in_date="",
+        const string& email = "",
+        const string& contact_info = "",
+        const string& check_in_date = "",
         const string& check_out_date = "",
         int room_no = 0,
         const string& room_type = "");
@@ -103,21 +105,17 @@ public:
     void printGuests();
     void printRoomDetails();
 
-    //##____________________GETTING RELATED DATA___________________________________________
-
+    //##-------------------GETTING RELATED DATA-------------------------------------------##
     int getRoomID(int room_no);
 
-    //_________________________DELETE FUNCTIONALITY IN THE DATABASE________________________
+    //##-------------------DELETE FUNCTIONALITY IN THE DATABASE---------------------------##
     bool deleteGuest(int guest_id);
     bool deleteRoom(int room_id);
     bool deleteBooking(int booking_id);
-
-
-
 
 private:
     sqlite3* db;
     std::string dbFile;
 };
 
-#endif // 
+#endif

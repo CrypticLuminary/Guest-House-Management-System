@@ -959,3 +959,6 @@ bool Database::deleteBooking(int booking_id) {
     sqlite3_finalize(stmt);
     return true;
 }
+
+
+//_______________________________ADMIN FUNCTIIONALITIES____________________
