@@ -8,5 +8,5 @@ run: guesthouse
 	./guesthouse
 
 clean:
-	rm -rf guesthouse
+	rm -rf ./guesthouse.exe
 

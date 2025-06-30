@@ -53,7 +53,7 @@ bool Database::createTable() {
     //create the room_details table
     const char* RoomDetails = "CREATE TABLE IF NOT EXISTS RoomDetails ("
                             "room_id INTEGER PRIMARY KEY AUTOINCREMENT,"
-                            "room_no INTEGER NOT NULL,"
+                            "room_no INTEGER UNIQUE NOT NULL,"
                             "room_type TEXT NOT NULL,"
                             "price_per_night REAL  NULL, "
                             "status TEXT  CHECK(status IN('Available','Occupied','Under Maintainance Reserved')) DEFAULT 'Available');";
@@ -137,9 +137,19 @@ bool Database::createTable() {
                                 "sub_total DECIMAL NOT NULL, "
                                 "tax_percent DECIMAL, "
                                 "tax_amt DECIMAL );";
+
+    //RESERVATION
+    const char* sqlreservation = "CREATE TABLE IF NOT EXISTS Reservations("
+                            "reservation_id INTEGER PRIMARY KEY AUTOINCREMENT, "
+                            "check_in_date DATE DEFAULT (DATE('now')), "
+                            "check_out_date DATE NULL, "
+                            "guest_id INTEGER REFERENCES Guests(guest_id) ON DELETE CASCADE, "
+                            "room_id INTEGER UNIQUE REFERENCES RoomDetails(room_id) ON DELETE CASCADE, "
+                            "booking_id INTEGER, "
+                            "booking_status TEXT CHECK(booking_status IN ('reserved', 'onboard')) DEFAULT 'reserved', "
+                            "FOREIGN KEY (booking_id) REFERENCES Booking(booking_id));";
                                 
     
-
 
 
     //guest
@@ -215,6 +225,14 @@ bool Database::createTable() {
         return false;
     }
 
+    //RESERVATION
+    rc = sqlite3_exec(db, sqlreservation, nullptr, nullptr, &errMsg);
+    if (rc != SQLITE_OK) {
+        cerr << "Error creating reservation table: " << errMsg << endl;
+        sqlite3_free(errMsg);
+        return false;
+    }
+
     //GUEST_EXPENSES
     rc = sqlite3_exec(db, sqlguestexpenses, nullptr, nullptr, &errMsg);
     if (rc != SQLITE_OK) {
@@ -224,6 +242,58 @@ bool Database::createTable() {
     }
 
     cout << "Table created successfully!" << std::endl;
+    return true;
+}
+
+
+
+//   ##_________________________________CREATING TRIGGERS POINT_______________________________________________________##
+
+bool Database::createTriggrs() {
+    // 1. Auto-create booking when reservation is inserted
+    const char* trigger1 = "CREATE TRIGGER IF NOT EXISTS auto_create_booking "
+                          "AFTER INSERT ON Reservations "
+                          "FOR EACH ROW "
+                          "WHEN NEW.booking_id IS NULL "
+                          "BEGIN "
+                              "INSERT INTO Booking (guest_id, room_id, check_in_date, check_out_date, booking_status) "
+                              "VALUES (NEW.guest_id, NEW.room_id, NEW.check_in_date, NEW.check_out_date, 'confirmed'); "
+                              
+                              "UPDATE Reservations "
+                              "SET booking_id = last_insert_rowid() "
+                              "WHERE reservation_id = NEW.reservation_id; "
+                          "END;";
+
+    // 2. Sync dates when reservation is updated
+    const char* trigger2 = "CREATE TRIGGER IF NOT EXISTS sync_booking_on_reservation_update "
+                          "AFTER UPDATE OF check_in_date, check_out_date ON Reservations "
+                          "FOR EACH ROW "
+                          "BEGIN "
+                              "UPDATE Booking "
+                              "SET check_in_date = NEW.check_in_date, "
+                                  "check_out_date = NEW.check_out_date "
+                              "WHERE booking_id = NEW.booking_id; "
+                          "END;";
+
+    // 3. Update booking on checkout (reservation delete)
+    const char* trigger3 = "CREATE TRIGGER IF NOT EXISTS checkout_booking "
+                          "BEFORE DELETE ON Reservations "
+                          "FOR EACH ROW "
+                          "BEGIN "
+                              "UPDATE Booking "
+                              "SET check_out_date = DATE('now'), "
+                                  "booking_status = 'checked out' "
+                              "WHERE booking_id = OLD.booking_id; "
+                          "END;";
+
+    char* errMsg = nullptr;
+    
+    // Execute all triggers
+    sqlite3_exec(db, trigger1, nullptr, nullptr, &errMsg);
+    sqlite3_exec(db, trigger2, nullptr, nullptr, &errMsg);
+    sqlite3_exec(db, trigger3, nullptr, nullptr, &errMsg);
+    
+    cout << "All triggers created successfully!" << endl;
     return true;
 }
 
@@ -401,6 +471,38 @@ bool Database::booking (int guest_id, int room_id, const string& booking_status)
     }
 
     // Finalize the statement
+    sqlite3_finalize(stmt);
+    return true;
+}
+
+//RESERVATION
+// Option 1: Pass 0 for booking_id, let trigger handle it
+
+// Option 2: Modify reservation function to auto-generate booking_id
+bool Database::reservation(int guest_id, int room_id, int booking_id, const string& booking_status) {
+    // Let the trigger create the booking automatically
+    const char* sqlInsertReservation = "INSERT INTO Reservations (guest_id, room_id, booking_status) "
+                                      "VALUES (?, ?, ?);";
+    sqlite3_stmt* stmt;
+    int rc = sqlite3_prepare_v2(db, sqlInsertReservation, -1, &stmt, nullptr);
+   
+    if (rc != SQLITE_OK) {
+        std::cerr << "Failed to prepare statement: " << sqlite3_errmsg(db) << std::endl;
+        return false;
+    }
+
+    sqlite3_bind_int(stmt, 1, guest_id);
+    sqlite3_bind_int(stmt, 2, room_id);
+    sqlite3_bind_text(stmt, 3, booking_status.c_str(), -1, SQLITE_STATIC);
+
+    rc = sqlite3_step(stmt);
+    if (rc != SQLITE_DONE) {
+        std::cerr << "Execution failed: " << sqlite3_errmsg(db) << std::endl;
+        sqlite3_finalize(stmt);
+        return false;
+    }
+
+    std::cout << "Reservation created and booking auto-generated!" << std::endl;
     sqlite3_finalize(stmt);
     return true;
 }
@@ -954,6 +1056,35 @@ bool Database::deleteBooking(int booking_id) {
     }
 
     cout << "Booking with ID " << booking_id << " deleted successfully!" << endl;
+
+   
+    sqlite3_finalize(stmt);
+    return true;
+}
+
+//RESERVATION
+bool Database::deleteReservation(int reservation_id) {
+    const char* sqlDelete = "DELETE FROM Reservations WHERE reservation_id = ?;";
+    sqlite3_stmt* stmt;
+    int rc = sqlite3_prepare_v2(db, sqlDelete, -1, &stmt, nullptr);
+    if (rc != SQLITE_OK) {
+        cerr << "Failed to prepare statement: " << sqlite3_errmsg(db) << endl;
+        return false;
+    }
+
+   
+    sqlite3_bind_int(stmt, 1, reservation_id);
+
+    
+    rc = sqlite3_step(stmt);
+    if (rc != SQLITE_DONE) {
+        cerr << "Execution failed: " << sqlite3_errmsg(db) << endl;
+        sqlite3_finalize(stmt);
+        return false;
+    }
+
+    cout << "Reservation with ID " << reservation_id << " deleted successfully!" << endl;
+    cout << "Booking table updated with checkout date automatically!" << endl;
 
    
     sqlite3_finalize(stmt);

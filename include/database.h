@@ -14,6 +14,7 @@ public:
     bool open();
     void close();
     bool createTable();
+    bool createTriggrs();
 
     // Getter for SQLite database handle
     sqlite3* getDb() { return db; }
@@ -66,6 +67,13 @@ public:
         int room_id, 
         const string& status);
 
+    //RESERVATION
+    bool reservation(
+        int guest_id, 
+        int room_id, 
+        int booking_id, 
+        const string& status);
+
     //##-----------------UPDATING DATA ON THE DATABASE-------------------------------##
 
     // UPDATING ADMIN LOGIN DETAILS
@@ -112,6 +120,7 @@ public:
     bool deleteGuest(int guest_id);
     bool deleteRoom(int room_id);
     bool deleteBooking(int booking_id);
+    bool deleteReservation(int reservation_id);
 
 private:
     sqlite3* db;

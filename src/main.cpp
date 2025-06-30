@@ -32,10 +32,17 @@ int main() {
          return 1;
      }
 
+    if (db.createTable()) {
+    db.createTriggrs(); 
+    cout << "Database and triggers created successfully!" << endl;
+
+    }
+
     Admin a;
     a.admin(db);
 
 
+    sqlite3_exec(db.getDb(), "PRAGMA foreign_keys = ON;", nullptr, nullptr, nullptr);
 
 
 

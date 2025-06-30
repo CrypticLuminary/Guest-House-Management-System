@@ -40,6 +40,14 @@
 //         return 1;
 //     }
 
+//     if (db.createTable()) {
+//     db.createTriggrs(); 
+//     cout << "Database and triggers created successfully!" << endl;
+
+//     }
+
+//     sqlite3_exec(db.getDb(), "PRAGMA foreign_keys = ON;", nullptr, nullptr, nullptr);
+
 //     // // Insert a guest
 //     // db.insertGuest("John Doe", "1234567890", "john.doe@example.com");
 //     // db.insertGuest("Jane Smith", "9876543210", "jane.smith@example.com");
@@ -256,6 +264,10 @@
 
 // // cout << "\nFinal room list:" << endl;
 // // admin.viewAllRooms(db);
+
+// // _______________________________________TESTING RESERVATION__________________________
+// db.reservation(1,3,1,"reserved");
+// // db.deleteReservation(8);
 
 // db.close();
 // return (0);
