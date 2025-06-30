@@ -17,11 +17,14 @@ public:
     bool addRoom(Database& db, int roomNo, const std::string& roomType, double price);
     void viewAllRooms(Database& db);
     bool admin(Database& db);
+    
 
     // Admin Management
     bool hasAdmin(Database& db); // Check if any admin exists
     bool createDefaultAdmin(Database& db, const std::string& username, const std::string& email, const std::string& password); // Create an admin
     bool validateAdminLogin(Database& db, const std::string& username, const std::string& password); // Validate admin login
+    bool loginAdmin(Database &db);
+    bool adminPower(Database &db);
 
     // Getters
     int getAdminID() const { return adminID; }

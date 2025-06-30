@@ -1,3 +1,5 @@
+#include <conio.h>
+
 #include "../include/admin.h"
 #include "../include/database.h"
 #include <sqlite3.h>
@@ -6,7 +8,7 @@
 //____________________MAIN PART OF ADMIN_______________________________
 bool Admin::admin(Database& db) {
 Admin admin;
-    // Check if an admin exists; if not, prompt to create one
+
     if (!admin.hasAdmin(db)) {
         std::cout << "No admin found. Please create an admin account." << std::endl;
         std::string username, email, password;
@@ -23,14 +25,19 @@ Admin admin;
 
         if (admin.createDefaultAdmin(db, username, email, password)) {
             std::cout << "Admin account created successfully!" << std::endl;
+            admin.loginAdmin(db);
         } else {
             std::cerr << "Failed to create admin account." << std::endl;
             db.close();
             return 1;
         }
     }
+    
+return 1;
+}
 
-    // Prompt for admin login
+bool Admin::loginAdmin(Database& db) {
+    Admin admin;
     bool loggedIn = false;
     int attempts = 0;
     const int maxAttempts = 3;
@@ -45,6 +52,9 @@ Admin admin;
 
         if (admin.validateAdminLogin(db, username, password)) {
             std::cout << "Login successful! Welcome, " << username << "." << std::endl;
+            std::cout << "\n\n";
+            system("CLS");
+            admin.adminPower(db);
             loggedIn = true;
         } else {
             attempts++;
@@ -57,9 +67,95 @@ Admin admin;
         db.close();
         return 1;
     }
+
 }
 
-//______________________DATABASE PART OF ADMIN__________________________
+//______________________DISPLAY PART OF ADMIN__________________________
+
+
+
+
+
+
+bool Admin::adminPower(Database &db) {
+    
+    int choice;
+    std::cout << "+++++++++++++++++++++++++++++++++++++++    ADMIN INTERFACE    +++++++++++++++++++++++++++++++++++++++++++++++"<<"\n\n\n";
+    std::cout << "&$#*&#*&#*#&*#&*&#*&#*&#*&#*&#&#*&#*&#    ENTER YOUR CHPICE   *&#*&#*#&*#&*#&*#&*#&*#&*#&*#&*#&*#&*#*#&*#&#*&*#"<<"\n\n";
+while (true)
+{
+
+    std::cout << "\nHotel Management Menu:\n";
+    std::cout << "1. Add Room\n";
+    std::cout << "2. View All Rooms\n";
+    std::cout << "3. Exit\n";
+    std::cout << "Enter choice (1-3): ";
+    std::cin >> choice;
+
+    if (std::cin.fail()) {
+        
+            std::cin.clear();
+            std::cin.ignore(10000, '\n');
+            std::cout << "Invalid input. Please enter a number.\n";
+            continue;
+        }
+
+        switch (choice) {
+        case 1: {
+            int roomNo;
+            std::string roomType;
+            double price;
+
+            std::cout << "Enter room number: ";
+            std::cin >> roomNo;
+            std::cin.ignore(); // Clear newline
+            std::cout << "Enter room type (e.g., Single, Double): ";
+            std::getline(std::cin, roomType);
+            std::cout << "Enter price: ";
+            std::cin >> price;
+
+            if (addRoom(db, roomNo, roomType, price)) {
+                std::cout << "Room added successfully!\n";
+            } else {
+                std::cout << "Failed to add room.\n";
+            }
+            break;
+        }
+        case 2:
+            viewAllRooms(db);
+            break;
+        case 3:
+            std::cout << "Exiting...\n";
+            return 0;
+        default:
+            std::cout << "Invalid choice. Please enter 1, 2, or 3.\n";
+            break;
+        }
+        
+    }
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// _____________________________ADMIN WORK START FROM HERE______________________
+
 
 Admin::Admin() : adminID(0), username(""), role("") {}
 
@@ -69,7 +165,7 @@ void Admin::setAdminInfo(int id, const std::string& name, const std::string& adm
     role = adminRole;
 }
 
-// Check if any admin exists
+
 bool Admin::hasAdmin(Database& db) {
     const char* sql = "SELECT COUNT(*) FROM Admin;";
     sqlite3_stmt* stmt;
@@ -89,12 +185,12 @@ bool Admin::hasAdmin(Database& db) {
     return hasAdmin;
 }
 
-// Create an admin
+
 bool Admin::createDefaultAdmin(Database& db, const std::string& username, const std::string& email, const std::string& password) {
     return db.insertAdmin(username, password ,email);
 }
 
-// Validate admin login credentials
+
 bool Admin::validateAdminLogin(Database& db, const std::string& username, const std::string& password) {
     const char* sql = "SELECT COUNT(*) FROM Admin WHERE username = ? AND password = ?;";
     sqlite3_stmt* stmt;
