@@ -14,6 +14,8 @@
 #include "../include/receptionist.h"
 #include "../include/validator.h"
 #include "../include/user.h"
+#include "../include/staff.h"
+
 using namespace std;
 
 
@@ -39,6 +41,7 @@ int main() {
     }
 
     Admin a;
+    staffmanager s;
     a.admin(db);
 
 
@@ -62,7 +65,8 @@ int main() {
     int choice;
 
 
-
+    string d = "";
+    string b = "";
     system("CLS");
     cout << "\n\n\n";
     cout << "************************************************************************************************************** " << endl ;
@@ -76,8 +80,11 @@ int main() {
     switch (choice)
     {
         case 1:
-           cout << "Hello receponist" << endl;
-            break;
+            cout << "\n\n************************************************************************************************" << endl;
+            cout << "\n\n";
+            cout << "____________________________________________    WELCOME STAFF     ____________________________________________ \n\n";
+            s.loginStaff(db,d,b);
+                break;
 
         case 2:
            cout << "\n\n************************************************************************************************" << endl;

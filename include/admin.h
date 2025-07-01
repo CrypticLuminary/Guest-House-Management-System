@@ -25,6 +25,9 @@ public:
     bool validateAdminLogin(Database& db, const std::string& username, const std::string& password); // Validate admin login
     bool loginAdmin(Database &db);
     bool adminPower(Database &db);
+    bool manageRoom(Database &db);
+    bool managestaff(Database &db);
+    bool manage(Database &db);
 
     // Getters
     int getAdminID() const { return adminID; }

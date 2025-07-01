@@ -269,6 +269,42 @@
 // db.reservation(1,3,1,"reserved");
 // // db.deleteReservation(8);
 
+
+// int enterTestGuestDetails(Database& db) {
+//     cout << "\n========== ADDING TEST GUEST ==========" << endl;
+    
+//     // Pre-filled test data
+//     string fname = "John";
+//     string lname = "Doe";
+//     string contact_info = "+1-555-123-4567";
+//     string email = "john.doe@email.com";
+//     string id_proof = "Passport: A12345678";
+//     string relationship = "married";
+//     string address = "123 Main St, New York, NY 10001";
+    
+//     cout << "Adding test guest: " << fname << " " << lname << endl;
+    
+//     int guest_id = db.insertGuest(fname, lname, contact_info, email, id_proof, relationship, address);
+    
+//     if (guest_id > 0) {
+//         cout << "✅ Test guest added successfully!" << endl;
+//         cout << "Guest ID: " << guest_id << endl;
+//         return guest_id;
+//     } else {
+//         cout << "❌ Failed to add test guest." << endl;
+//         return -1;
+//     }
+// }
+
+
+
+
+
+
+
+
+
+
 // db.close();
 // return (0);
 // }

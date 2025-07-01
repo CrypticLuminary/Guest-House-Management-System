@@ -1,67 +1,26 @@
 #ifndef RECEPTIONIST_H
 #define RECEPTIONIST_H
-#include <string>
+
 #include <iostream>
-
-// class Receptionist {
-// public:
-    // void greetGuest();
-//     void checkInGuest();
-//     void checkOutGuest();
-//     void handlePayment();
-//     void assistWithQueries();
-// };
-
+#include <string>
 using namespace std;
 
-class guest
-{
-    string name;
-    string email;
-    string phone;
-    public:
-    int add_customer();
-    int check_availability();
-    int update_reservation();
-    int cancel_reservation();
-    int view_reservations();
+// Forward declaration
+class Database;
+
+class receptionist {
+
+  
+public:
+    // Guest management
+    int enterGuestDetails(Database& db);
+    
+    // Room and reservation management
+    void checkRoomAvailability(Database& db, const string& check_in_date = "", const string& check_out_date = "");
+    int update_reservation(Database& db);
+    int cancel_reservation(Database& db);
+    int view_reservations(Database& db);
+    bool staffPower(Database& db);
 };
-// int main()
-// {
-//     guest g;
-//     int choice;
-//     cout << "Welcome to the Guest House Reservation Management System!" << endl;
-//     cout << "Please choose an option from the menu below: " << endl;
-//     cout << "1. Add customer" << endl;
-//     cout << "2. Check Availability" << endl;
-//     cout << "3. Update Reservation" << endl;
-//     cout << "4. Cancel Reservation" << endl;
-//     cout << "5. View Reservations" << endl;
-//     cout << "6. Exit" << endl;
-//     cout << "Enter your choice: ";
-//     cin >> choice;
-//     switch (choice)
-//     {
-//     case 1:
-//         add_customer(g);
-//         break;
-//     case 2:
-//         check_availability();
-//         break;
-//     case 3:
-//         update_reservation();
-//         break;
-//     case 4:
-//         cancel_reservation();
-//         break;
-//     case 5:
-//         view_reservations();
-//         break;
-//     case 6:
-//         cout << "Exiting the program." << endl;
-//         break;
-//     }
-//     return 0;
-// }
 
 #endif

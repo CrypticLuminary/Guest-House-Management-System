@@ -66,12 +66,21 @@ bool Database::createTable() {
                            "password TEXT NOT NULL); " ;
                            
 
-    const char* sqlStaff = "CREATE TABLE IF NOT EXISTS Staff("
+//STAFF TABLE
+const char* createStaffTable = 
+                            "CREATE TABLE IF NOT EXISTS Staff ("
                             "staff_id INTEGER PRIMARY KEY AUTOINCREMENT, "
-                           "username TEXT UNIQUE NOT NULL, "
-                           "email TEXT NOT NULL UNIQUE, "
-                           "password TEXT NOT NULL, " 
-                           "role TEXT CHECK(role IN('receptionist','manager')) NOT NULL);";
+                            "username TEXT UNIQUE NOT NULL, "
+                            "password TEXT NOT NULL, "
+                            "email TEXT UNIQUE NOT NULL, "
+                            "role TEXT NOT NULL CHECK(role IN ('admin', 'manager', 'receptionist', 'staff')), "
+                            "status TEXT DEFAULT 'active' CHECK(status IN ('active', 'inactive')), "
+                            "created_at TEXT NOT NULL, "
+                            "created_by TEXT NOT NULL, "
+                            "updated_at TEXT, "
+                            "updated_by TEXT, "
+                            "last_login TEXT"
+                            ");";
 
     const char* sqlStaffDetails = "CREATE TABLE IF NOT EXISTS StaffDetails ("
                         "staffinfo_id INTEGER PRIMARY KEY AUTOINCREMENT, "
@@ -178,7 +187,7 @@ bool Database::createTable() {
     }
 
     //Staff
-    rc = sqlite3_exec(db, sqlStaff, nullptr, nullptr, &errMsg);
+    rc = sqlite3_exec(db, createStaffTable, nullptr, nullptr, &errMsg);
     if(rc != SQLITE_OK) {
         cerr << "Error creating staff table: " << errMsg << endl;
         sqlite3_free(errMsg);
