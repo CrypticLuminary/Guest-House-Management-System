@@ -155,7 +155,7 @@ const char* createStaffTable =
                             "guest_id INTEGER REFERENCES Guests(guest_id) ON DELETE CASCADE, "
                             "room_id INTEGER UNIQUE REFERENCES RoomDetails(room_id) ON DELETE CASCADE, "
                             "booking_id INTEGER, "
-                            "booking_status TEXT CHECK(booking_status IN ('reserved', 'onboard')) DEFAULT 'reserved', "
+                            "booking_status TEXT CHECK(booking_status IN ('reserved', 'onboard','cancelled')) DEFAULT 'reserved', "
                             "FOREIGN KEY (booking_id) REFERENCES Booking(booking_id));";
                                 
     
@@ -294,6 +294,37 @@ bool Database::createTriggrs() {
                                   "booking_status = 'checked out' "
                               "WHERE booking_id = OLD.booking_id; "
                           "END;";
+// 4. Trigger 4
+    const char* trigger4 = "CREATE TRIGGER IF NOT EXISTS update_room_to_occupied_booking "
+                                "AFTER INSERT ON Booking "
+                                "FOR EACH ROW "
+                                "WHEN NEW.booking_status = 'confirmed' "
+                                "BEGIN "
+                                    "UPDATE RoomDetails "
+                                    "SET status = 'Occupied' "
+                                    "WHERE room_id = NEW.room_id; "
+                                "END;";
+    
+    // Trigger 5: Set room to available when reservation is cancelled
+    const char* trigger5 = "CREATE TRIGGER IF NOT EXISTS update_room_to_available_on_cancel "
+                          "AFTER UPDATE ON Reservations "
+                          "FOR EACH ROW "
+                          "WHEN NEW.booking_status = 'cancelled' AND OLD.booking_status != 'cancelled' "
+                          "BEGIN "
+                              "UPDATE RoomDetails "
+                              "SET status = 'Available' "
+                              "WHERE room_id = NEW.room_id; "
+                          "END;";
+    
+    // Trigger 6: Set room to available when reservation is deleted
+    const char* trigger6 = "CREATE TRIGGER IF NOT EXISTS update_room_to_available_on_delete "
+                          "AFTER DELETE ON Reservations "
+                          "FOR EACH ROW "
+                          "BEGIN "
+                              "UPDATE RoomDetails "
+                              "SET status = 'Available' "
+                              "WHERE room_id = OLD.room_id; "
+                          "END;";
 
     char* errMsg = nullptr;
     
@@ -301,6 +332,10 @@ bool Database::createTriggrs() {
     sqlite3_exec(db, trigger1, nullptr, nullptr, &errMsg);
     sqlite3_exec(db, trigger2, nullptr, nullptr, &errMsg);
     sqlite3_exec(db, trigger3, nullptr, nullptr, &errMsg);
+    sqlite3_exec(db, trigger4, nullptr, nullptr, &errMsg);
+    sqlite3_exec(db, trigger5, nullptr, nullptr, &errMsg);
+    sqlite3_exec(db, trigger6, nullptr, nullptr, &errMsg);
+    
     
     cout << "All triggers created successfully!" << endl;
     return true;

@@ -9,7 +9,7 @@ class Guest {
         std::string phone;
         std::string email;
     public:
-        Guest(std::string name, std::string phone, std::string email);
+        // Guest(std::string name, std::string phone, std::string email);
         void displayInfo();
         void welcomeGuest();
     };
