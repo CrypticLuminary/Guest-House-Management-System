@@ -732,7 +732,7 @@ bool Database::updateGuest(vector<int> guest_id, const string& fname, const stri
         return false;
     }
 
-    std::cout << "Admin details updated successfully!" << std::endl;
+    std::cout << "Guest details updated successfully!" << std::endl;
 
     // Finalize the statement
     sqlite3_finalize(stmt);

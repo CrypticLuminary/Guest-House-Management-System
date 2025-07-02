@@ -1,5 +1,6 @@
 #include <iostream>
 #include <string>
+#include <conio.h>
 #include <sqlite3.h>
 #include "../include/database.h"
 #include "../include/guest.h"
@@ -19,19 +20,74 @@ bool staffmanager::loginStaff(Database& db, string& loggedUsername, string& logg
     receptionist r;
     string username, password;
     
-    cout << "\n=== STAFF LOGIN ===" << endl;
+system("cls");
+cout << "\n";
+cout << "================================================================================\n";
+cout << "||                                                                            ||\n";
+cout << "||   SSSS  TTTTT   AAA   FFFFF  FFFFF     L       OOO    GGG   III  N   N   ||\n";
+cout << "||   S       T    A   A  F      F         L      O   O  G   G   I   NN  N   ||\n";
+cout << "||   SSSS    T    AAAAA  FFFF   FFFF      L      O   O  G       I   N N N   ||\n";
+cout << "||      S    T    A   A  F      F         L      O   O  G   G   I   N  NN   ||\n";
+cout << "||   SSSS    T    A   A  F      F         LLLLL   OOO    GGG   III  N   N   ||\n";
+cout << "||                                                                            ||\n";
+cout << "||                      RECEPTIONIST AUTHENTICATION                          ||\n";
+cout << "||                                                                            ||\n";
+cout << "================================================================================\n";
 
-    cin.ignore();
-    cout << "Username: ";
-    getline(cin, username);
-    
-    cout << "Password: ";
-    getline(cin, password);
-    
-    if (username.empty() || password.empty()) {
-        cout << " Username and password required!" << endl;
-        return false;
-    }
+cout << "\n";
+cout << "********************************************************************************\n";
+cout << "*                            SECURE LOGIN PORTAL                              *\n";
+cout << "********************************************************************************\n";
+cout << "\n";
+
+// Username Input Section
+cout << "+------------------------------------------------------------------------------+\n";
+cout << "|                              USERNAME ENTRY                                 |\n";
+cout << "+------------------------------------------------------------------------------+\n";
+cout << "| Username: ";
+cin.ignore();
+getline(cin, username);
+cout << "+------------------------------------------------------------------------------+\n";
+
+cout << "\n";
+
+// Password Input Section  
+cout << "+------------------------------------------------------------------------------+\n";
+cout << "|                              PASSWORD ENTRY                                 |\n";
+cout << "+------------------------------------------------------------------------------+\n";
+cout << "| Password: ";
+getline(cin, password);
+cout << "+------------------------------------------------------------------------------+\n";
+
+cout << "\n";
+
+// Validation Check
+if (username.empty() || password.empty()) {
+    cout << "********************************************************************************\n";
+    cout << "*                                  ERROR!                                      *\n";
+    cout << "*                                                                              *\n";
+    cout << "*    X   X     EEEEE  RRRR   RRRR    OOO   RRRR      !!                     *\n";
+    cout << "*     X X      E      R   R  R   R  O   O  R   R     !!                     *\n";
+    cout << "*      X       EEEE   RRRR   RRRR   O   O  RRRR      !!                     *\n";
+    cout << "*     X X      E      R R    R R    O   O  R R       !!                     *\n";
+    cout << "*    X   X     EEEEE  R  R   R  R    OOO   R  R      !!                     *\n";
+    cout << "*                                                                              *\n";
+    cout << "*                    USERNAME AND PASSWORD ARE REQUIRED!                      *\n";
+    cout << "*                                                                              *\n";
+    cout << "*                         >> Please try again <<                              *\n";
+    cout << "*                                                                              *\n";
+    cout << "********************************************************************************\n";
+    cout << "\n>> Returning to login screen...\n\n";
+    return false;
+}
+
+// Success Message
+
+cout << "********************************************************************************\n";
+cout << "*                            LOGIN SUCCESSFUL!                                 *\n";
+cout << "********************************************************************************\n";
+cout << "\n>> Welcome, " << username << "!\n";
+cout << ">> Access granted to Reception Portal\n\n";
     
     // Check credentials
     const char* loginSQL = "SELECT staff_id, username, role, status FROM Staff "
@@ -209,7 +265,7 @@ bool staffmanager::updateStaff(Database& db) {
     sqlite3_finalize(stmt);
     
     if (rc == SQLITE_DONE) {
-        cout << "✅ Staff updated successfully!" << endl;
+        cout << " Staff updated successfully!" << endl;
         cout << "Updated by: CrypticLuminary at 2025-07-01 04:54:27" << endl;
         return true;
     } else {
@@ -273,7 +329,7 @@ bool staffmanager::deleteStaff(Database& db) {
     sqlite3_finalize(stmt);
     
     if (rc == SQLITE_DONE) {
-        cout << "✅ Staff deleted successfully!" << endl;
+        cout << " Staff deleted successfully!" << endl;
         cout << "Deleted by: CrypticLuminary at 2025-07-01 04:54:27" << endl;
         return true;
     } else {
@@ -368,7 +424,7 @@ bool staffmanager::changePassword(Database& db, const string& username) {
     sqlite3_finalize(stmt);
     
     if (rc == SQLITE_DONE) {
-        cout << "✅ Password changed successfully!" << endl;
+        cout << " Password changed successfully!" << endl;
         cout << "Changed by: " << username << " at 2025-07-01 04:54:27" << endl;
         return true;
     } else {

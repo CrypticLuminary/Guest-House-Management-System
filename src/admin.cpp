@@ -99,7 +99,7 @@ void roomManagementMenu(Database& db) {
         cout << "2. View All Rooms" << endl;
         cout << "3. Update Room Details" << endl;
         cout << "4. Delete Room" << endl;
-        cout << "5. Room Status Management" << endl;
+        // cout << "5. Room Status Management" << endl;
         cout << "0. Back to Main Menu" << endl;
         cout << "Enter choice: ";
         
@@ -150,16 +150,16 @@ void roomManagementMenu(Database& db) {
                 // deleteRoom(db);
                 break;
                 
-            case 5:
-                cout << "\n--- ROOM STATUS MANAGEMENT ---" << endl;
-                // manageRoomStatus(db);
-                break;
+            // case 5:
+            //     cout << "\n--- ROOM STATUS MANAGEMENT ---" << endl;
+            //     // manageRoomStatus(db);
+            //     break;
                 
             case 0:
                 return;
                 
             default:
-                cout << "❌ Invalid choice!" << endl;
+                cout << " Invalid choice!" << endl;
         }
         
         cout << "\nPress Enter to continue...";
@@ -179,7 +179,7 @@ void staffManagementMenu(Database& db) {
         cout << "2. Add New Staff" << endl;
         cout << "3. Update Staff Details" << endl;
         cout << "4. Delete Staff Member" << endl;
-        cout << "5. Staff Performance Report" << endl;
+        // cout << "5. Staff Performance Report" << endl;
         cout << "0. Back to Main Menu" << endl;
         cout << "Enter choice: ";
         
@@ -214,16 +214,16 @@ void staffManagementMenu(Database& db) {
                 }
                 break;
                 
-            case 5:
-                cout << "\n--- STAFF PERFORMANCE REPORT ---" << endl;
-                // generateStaffReport(db);
-                break;
+            // case 5:
+            //     cout << "\n--- STAFF PERFORMANCE REPORT ---" << endl;
+            //     // generateStaffReport(db);
+            //     break;
                 
             case 0:
                 return;
                 
             default:
-                cout << "❌ Invalid choice!" << endl;
+                cout << " Invalid choice!" << endl;
         }
         
         cout << "\nPress Enter to continue...";
@@ -241,7 +241,7 @@ void guestManagementMenu(Database& db) {
         cout << "1. View All Guests" << endl;
         cout << "2. Add New Guest" << endl;
         cout << "3. Update Guest Details" << endl;
-        cout << "4. Guest History Report" << endl;
+        // cout << "4. Guest History Report" << endl;
         cout << "0. Back to Main Menu" << endl;
         cout << "Enter choice: ";
         
@@ -265,16 +265,16 @@ void guestManagementMenu(Database& db) {
                 // db.updateGuest(db);
                 break;
                 
-            case 4:
-                cout << "\n--- GUEST HISTORY REPORT ---" << endl;
-                // generateGuestReport(db);
-                break;
+            // case 4:
+            //     cout << "\n--- GUEST HISTORY REPORT ---" << endl;
+            //     // generateGuestReport(db);
+            //     break;
                 
             case 0:
                 return;
                 
             default:
-                cout << "❌ Invalid choice!" << endl;
+                cout << " Invalid choice!" << endl;
         }
         
         cout << "\nPress Enter to continue...";
@@ -288,7 +288,6 @@ void systemReportsMenu(Database& db) {
     
     while (true) {
         cout << "\n=== SYSTEM REPORTS ===" << endl;
-        cout << "Admin: CrypticLuminary | Time: 2025-07-01 05:13:40" << endl;
         cout << "1. Daily Revenue Report" << endl;
         cout << "2. Monthly Summary" << endl;
         cout << "3. Room Occupancy Report" << endl;
@@ -336,7 +335,7 @@ void systemReportsMenu(Database& db) {
                 return;
                 
             default:
-                cout << "❌ Invalid choice!" << endl;
+                cout << " Invalid choice!" << endl;
         }
         
         cout << "\nPress Enter to continue...";
@@ -346,60 +345,133 @@ void systemReportsMenu(Database& db) {
 
 // Change Admin Password
 void changeAdminPassword(Database& db) {
-    string currentPassword, newPassword, confirmPassword;
+    string currentPassword, newPassword, confirmPassword, email;
     
-    cout << "\n=== CHANGE ADMIN PASSWORD ===" << endl;
-    cout << "Admin: CrypticLuminary | Time: 2025-07-01 05:13:40" << endl;
+    cout << "\n";
+    cout << "================================================================================\n";
+    cout << "||                                                                            ||\n";
+    cout << "||     CCC   H   H   AAA   N   N   GGG   EEEEE     PPPP    AAA    SSSS      ||\n";
+    cout << "||    C   C  H   H  A   A  NN  N  G   G  E         P   P  A   A  S          ||\n";
+    cout << "||    C      HHHHH  AAAAA  N N N  G      EEEE      PPPP   AAAAA  SSSS       ||\n";
+    cout << "||    C   C  H   H  A   A  N  NN  G   G  E         P      A   A     S       ||\n";
+    cout << "||     CCC   H   H  A   A  N   N   GGG   EEEEE     P      A   A  SSSS       ||\n";
+    cout << "||                                                                            ||\n";
+    cout << "||                        ADMIN PASSWORD CHANGE PORTAL                       ||\n";
+    cout << "||                                                                            ||\n";
+    cout << "================================================================================\n";
+    cout << "\n";
     
-    cout << "Enter current password: ";
+    cout << "+------------------------------------------------------------------------------+\n";
+    cout << "|                              EMAIL VERIFICATION                             |\n";
+    cout << "+------------------------------------------------------------------------------+\n";
+    cout << "| Enter admin EMAIL: ";
+    getline(cin, email);
+    cout << "+------------------------------------------------------------------------------+\n";
+    cout << "\n";
+    
+    cout << "+------------------------------------------------------------------------------+\n";
+    cout << "|                           CURRENT PASSWORD                                  |\n";
+    cout << "+------------------------------------------------------------------------------+\n";
+    cout << "| Enter current password: ";
     getline(cin, currentPassword);
+    cout << "+------------------------------------------------------------------------------+\n";
+    cout << "\n";
     
-    // Verify current password
-    const char* verifySQL = "SELECT admin_id FROM Admin WHERE username = 'CrypticLuminary' AND password = ?;";
+    // Verify current password - FIXED SQL
+    const char* verifySQL = "SELECT admin_id FROM Admin WHERE email = ? AND password = ?;";
     sqlite3_stmt* stmt;
     int rc = sqlite3_prepare_v2(db.getDb(), verifySQL, -1, &stmt, nullptr);
-    sqlite3_bind_text(stmt, 1, currentPassword.c_str(), -1, SQLITE_STATIC);
+    
+    // FIXED: Bind both email and password parameters
+    sqlite3_bind_text(stmt, 1, email.c_str(), -1, SQLITE_STATIC);
+    sqlite3_bind_text(stmt, 2, currentPassword.c_str(), -1, SQLITE_STATIC);
     
     if (sqlite3_step(stmt) != SQLITE_ROW) {
-        cout << "❌ Current password incorrect!" << endl;
+        cout << "********************************************************************************\n";
+        cout << "*                                  ERROR!                                      *\n";
+        cout << "*                                                                              *\n";
+        cout << "*                        CURRENT PASSWORD INCORRECT!                          *\n";
+        cout << "*                                                                              *\n";
+        cout << "*                    Please check your email and password                     *\n";
+        cout << "*                                                                              *\n";
+        cout << "********************************************************************************\n";
         sqlite3_finalize(stmt);
         return;
     }
     sqlite3_finalize(stmt);
     
-    cout << "Enter new password: ";
+    cout << "+------------------------------------------------------------------------------+\n";
+    cout << "|                              NEW PASSWORD                                    |\n";
+    cout << "+------------------------------------------------------------------------------+\n";
+    cout << "| Enter new password: ";
     getline(cin, newPassword);
+    cout << "+------------------------------------------------------------------------------+\n";
+    cout << "\n";
     
-    if (newPassword.length() < 8) {
-        cout << "❌ Password must be at least 8 characters!" << endl;
+    if (newPassword.length() < 3) {  // Your development setting
+        cout << "********************************************************************************\n";
+        cout << "*                                  ERROR!                                      *\n";
+        cout << "*                                                                              *\n";
+        cout << "*                   PASSWORD MUST BE AT LEAST 3 CHARACTERS!                  *\n";
+        cout << "*                                                                              *\n";
+        cout << "********************************************************************************\n";
         return;
     }
     
-    cout << "Confirm new password: ";
+    cout << "+------------------------------------------------------------------------------+\n";
+    cout << "|                           CONFIRM NEW PASSWORD                              |\n";
+    cout << "+------------------------------------------------------------------------------+\n";
+    cout << "| Confirm new password: ";
     getline(cin, confirmPassword);
+    cout << "+------------------------------------------------------------------------------+\n";
+    cout << "\n";
     
     if (newPassword != confirmPassword) {
-        cout << "❌ Passwords do not match!" << endl;
+        cout << "********************************************************************************\n";
+        cout << "*                                  ERROR!                                      *\n";
+        cout << "*                                                                              *\n";
+        cout << "*                         PASSWORDS DO NOT MATCH!                            *\n";
+        cout << "*                                                                              *\n";
+        cout << "*                           Please try again                                  *\n";
+        cout << "*                                                                              *\n";
+        cout << "********************************************************************************\n";
         return;
     }
     
-    // Update password
-    const char* updateSQL = "UPDATE Admin SET password = ?, updated_at = '2025-07-01 05:13:40', updated_by = 'CrypticLuminary' WHERE username = 'CrypticLuminary';";
+    cout << ">> Updating password in database...\n";
+    
+    // Update password - FIXED SQL
+    const char* updateSQL = "UPDATE Admin SET password = ? WHERE email = ?;";
     
     rc = sqlite3_prepare_v2(db.getDb(), updateSQL, -1, &stmt, nullptr);
+    
+    // FIXED: Bind both parameters
     sqlite3_bind_text(stmt, 1, newPassword.c_str(), -1, SQLITE_STATIC);
+    sqlite3_bind_text(stmt, 2, email.c_str(), -1, SQLITE_STATIC);
     
     rc = sqlite3_step(stmt);
     sqlite3_finalize(stmt);
     
     if (rc == SQLITE_DONE) {
-        cout << "Admin password changed successfully!" << endl;
-        cout << "Changed by: CrypticLuminary at 2025-07-01 05:13:40" << endl;
+        cout << "********************************************************************************\n";
+        cout << "*                                SUCCESS!                                      *\n";
+        cout << "*                                                                              *\n";
+        cout << "*                      ADMIN PASSWORD CHANGED SUCCESSFULLY!                   *\n";
+        cout << "*                                                                              *\n";
+        cout << "*                         Your new password is now active                     *\n";
+        cout << "*                                                                              *\n";
+        cout << "********************************************************************************\n";
     } else {
-        cout << "Failed to change password!" << endl;
+        cout << "********************************************************************************\n";
+        cout << "*                                  ERROR!                                      *\n";
+        cout << "*                                                                              *\n";
+        cout << "*                        FAILED TO CHANGE PASSWORD!                          *\n";
+        cout << "*                                                                              *\n";
+        cout << "*                    Database error code: " << rc << "                                    *\n";
+        cout << "*                                                                              *\n";
+        cout << "********************************************************************************\n";
     }
 }
-
 bool Admin::adminPower(Database &db) {
     int choice;
     system("CLS");
@@ -417,30 +489,30 @@ bool Admin::adminPower(Database &db) {
         cout << " HOTEL MANAGEMENT OPTIONS:" << endl;
         cout << "   1. Room Management" << endl;
         cout << "   2. Guest Management" << endl;
-        cout << "   3. Reservation Management" << endl;
+        cout << "   3. Booking Management" << endl;
         cout << string(50, '-') << endl;
         
         cout << "👥 STAFF MANAGEMENT OPTIONS:" << endl;
         cout << "   4. Staff Management" << endl;
         cout << "   5. Admin Management" << endl;
-        cout << "   6. User Access Control" << endl;
+        // cout << "   6. User Access Control" << endl;
         cout << string(50, '-') << endl;
         
-        cout << " SYSTEM MANAGEMENT OPTIONS:" << endl;
-        cout << "   7. View System Reports" << endl;
-        cout << "   8. Database Management" << endl;
-        cout << "   9. System Settings" << endl;
-        cout << string(50, '-') << endl;
+        // cout << " SYSTEM MANAGEMENT OPTIONS:" << endl;
+        // cout << "   7. View System Reports" << endl;
+        // cout << "   8. Database Management" << endl;
+        // cout << "   9. System Settings" << endl;
+        // cout << string(50, '-') << endl;
         
         cout << " ADMIN TOOLS:" << endl;
-        cout << "  10. Backup Database" << endl;
-        cout << "  11. View Activity Logs" << endl;
-        cout << "  12. Change Admin Password" << endl;
+        // cout << "  10. Backup Database" << endl;
+        // cout << "  11. View Activity Logs" << endl;
+        cout << "  7. Change Admin Password" << endl;
         cout << string(50, '-') << endl;
         
         cout << "   0. Exit Admin Panel" << endl;
         cout << string(80, '=') << endl;
-        cout << "Enter your choice (0-12): ";
+        cout << "Enter your choice (0-7): ";
         
         cin >> choice;
         cin.ignore(); // Clear input buffer
@@ -468,7 +540,7 @@ bool Admin::adminPower(Database &db) {
             }
             
             case 3: {
-                cout << "\n>>> RESERVATION MANAGEMENT SELECTED <<<" << endl;
+                cout << "\n>>> BOOKING MANAGEMENT SELECTED <<<" << endl;
                 // reservationManagementMenu(db);
                 break;
             }
@@ -485,43 +557,43 @@ bool Admin::adminPower(Database &db) {
                 break;
             }
             
-            case 6: {
-                cout << "\n>>> USER ACCESS CONTROL SELECTED <<<" << endl;
-                // userAccessControlMenu(db);
-                break;
-            }
+            // case 6: {
+            //     cout << "\n>>> USER ACCESS CONTROL SELECTED <<<" << endl;
+            //     // userAccessControlMenu(db);
+            //     break;
+            // }
+            
+            // case 7: {
+            //     cout << "\n>>> SYSTEM REPORTS SELECTED <<<" << endl;
+            //     // systemReportsMenu(db);
+            //     break;
+            // }
+            
+            // case 8: {
+            //     cout << "\n>>> DATABASE MANAGEMENT SELECTED <<<" << endl;
+            //     // databaseManagementMenu(db);
+            //     break;
+            // }
+            
+            // case 9: {
+            //     cout << "\n>>> SYSTEM SETTINGS SELECTED <<<" << endl;
+            //     // systemSettingsMenu(db);
+            //     break;
+            // }
+            
+            // case 10: {
+            //     cout << "\n>>> DATABASE BACKUP SELECTED <<<" << endl;
+            //     // backupDatabase(db);
+            //     break;
+            // }
+            
+            // case 11: {
+            //     cout << "\n>>> ACTIVITY LOGS SELECTED <<<" << endl;
+            //     // viewActivityLogs(db);
+            //     break;
+            // }
             
             case 7: {
-                cout << "\n>>> SYSTEM REPORTS SELECTED <<<" << endl;
-                // systemReportsMenu(db);
-                break;
-            }
-            
-            case 8: {
-                cout << "\n>>> DATABASE MANAGEMENT SELECTED <<<" << endl;
-                // databaseManagementMenu(db);
-                break;
-            }
-            
-            case 9: {
-                cout << "\n>>> SYSTEM SETTINGS SELECTED <<<" << endl;
-                // systemSettingsMenu(db);
-                break;
-            }
-            
-            case 10: {
-                cout << "\n>>> DATABASE BACKUP SELECTED <<<" << endl;
-                // backupDatabase(db);
-                break;
-            }
-            
-            case 11: {
-                cout << "\n>>> ACTIVITY LOGS SELECTED <<<" << endl;
-                // viewActivityLogs(db);
-                break;
-            }
-            
-            case 12: {
                 cout << "\n>>> CHANGE ADMIN PASSWORD SELECTED <<<" << endl;
                 changeAdminPassword(db);
                 break;
@@ -532,22 +604,19 @@ bool Admin::adminPower(Database &db) {
                 cout << "\n" << string(80, '=') << endl;
                 cout << "              ADMIN SESSION ENDED" << endl;
                 cout << string(80, '=') << endl;
-                cout << "Admin User: CrypticLuminary" << endl;
-                cout << "Session Duration: Active" << endl;
-                cout << "Logout Time: 2025-07-01 05:13:40 (UTC)" << endl;
-                cout << "System Status: All operations completed successfully" << endl;
-                cout << "Next Login: Available 24/7" << endl;
+
+     
                 cout << string(80, '=') << endl;
-                cout << "✅ Thank you for using the Admin Control Panel!" << endl;
+                cout << " Thank you for using the Admin Control Panel!" << endl;
                 return true;
             }
             
             default: {
                 cout << "\n>>> INVALID CHOICE DETECTED <<<" << endl;
-                cout << "❌ ERROR: Invalid menu option selected" << endl;
-                cout << "Valid options are: 0-12" << endl;
+                cout << " ERROR: Invalid menu option selected" << endl;
+                cout << "Valid options are: 0-7" << endl;
                 cout << "Please try again." << endl;
-                cout << "Error logged by: CrypticLuminary at 2025-07-01 05:13:40" << endl;
+        
                 break;
             }
         }

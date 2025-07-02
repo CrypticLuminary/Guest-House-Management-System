@@ -545,21 +545,22 @@ bool receptionist::staffPower(Database& db) {
         cout << "GUEST MANAGEMENT OPTIONS:" << endl;
         cout << "   1. Enter Guest Details" << endl;
         cout << "   2. Checkout" << endl;
+        cout << "   3. Update Guest Details" << endl;
         cout << string(50, '-') << endl;
         
         cout << "ROOM MANAGEMENT OPTIONS:" << endl;
-        cout << "   3. Check Room Availability" << endl;
+        cout << "   4. Check Room Availability" << endl;
         cout << string(50, '-') << endl;
         
         cout << "RESERVATION MANAGEMENT OPTIONS:" << endl;
-        cout << "   4. Update Reservation" << endl;
-        cout << "   5. Cancel Reservation" << endl;
-        cout << "   6. View Reservations" << endl;
+        cout << "   5. Update Reservation" << endl;
+        cout << "   6. Cancel Reservation" << endl;
+        cout << "   7. View Reservations" << endl;
         cout << string(50, '-') << endl;
         
         cout << "   0. Exit Staff Panel" << endl;
         cout << string(80, '=') << endl;
-        cout << "Enter your choice (0-5): ";
+        cout << "Enter your choice (0-7): ";
         
         cin >> choice;
         cin.ignore(); // Clear input buffer
@@ -599,8 +600,20 @@ bool receptionist::staffPower(Database& db) {
                 
                 break;
             }
+
+             case 3: {
+                receptionist rec;
+                
+                cout << "\n>>> UPDATE GUEST DETAILS SELECTED SELECTED <<<" << endl;
+               
+                cout << "\n";
+
+                // rec.cancel_reservation(db);
+                
+                break;
+            }
             
-            case 3: {
+            case 4: {
                 cout << "\n>>> CHECK ROOM AVAILABILITY SELECTED <<<" << endl;
                 string check_in, check_out;
                 cout << "Enter check-in date (YYYY-MM-DD) or press Enter for today: ";
@@ -614,7 +627,7 @@ bool receptionist::staffPower(Database& db) {
                 break;
             }
             
-            case 4: {
+            case 5: {
                 cout << "\n>>> UPDATE RESERVATION SELECTED <<<" << endl;
                 receptionist rec;
                 if (rec.update_reservation(db)) {
@@ -627,7 +640,7 @@ bool receptionist::staffPower(Database& db) {
                 break;
             }
             
-            case 5: {
+            case 6: {
                 cout << "\n>>> CANCEL RESERVATION SELECTED <<<" << endl;
                 receptionist rec;
                 if (rec.cancel_reservation(db)) {
@@ -640,7 +653,7 @@ bool receptionist::staffPower(Database& db) {
                 break;
             }
             
-            case 6: {
+            case 7: {
                 cout << "\n>>> VIEW RESERVATIONS SELECTED <<<" << endl;
                 receptionist rec;
                 if (rec.view_reservations(db)) {
