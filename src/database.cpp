@@ -1033,19 +1033,23 @@ int Database::getRoomID(int room_no) {
 //__________________________________DELETE FUNCTIONALITY IN DATABASE____________________________________________
 
 //GUEST
-bool Database::deleteGuest(int guest_id) {
+bool Database::deleteGuest(Database &db) {
+        int guest_id;
+        db.printGuests();
+        cout << "Enter Guest ID :: "<< endl;
+        cin >> guest_id;
         string sql  = "DELETE FROM Guests WHERE id = ?;";
         sqlite3_stmt* stmt;
-        int rc = sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, nullptr);
+        int rc = sqlite3_prepare_v2(db.getDb(), sql.c_str(), -1, &stmt, nullptr);
         if(rc != SQLITE_OK) {
-            cerr << "Failed to prepare statement (delete_guest): " << sqlite3_errmsg(db) << endl;
+            cerr << "Failed to prepare statement (delete_guest): " << sqlite3_errmsg(db.getDb()) << endl;
             return false;
         }
 
         sqlite3_bind_int(stmt, 1, guest_id);
         rc = sqlite3_step(stmt);
         if(rc != SQLITE_DONE) {
-            cerr << "Deletion of guest failed: " << sqlite3_errmsg(db) << endl;
+            cerr << "Deletion of guest failed: " << sqlite3_errmsg(db.getDb()) << endl;
             sqlite3_finalize(stmt);
             return false;
         }
@@ -1056,7 +1060,11 @@ bool Database::deleteGuest(int guest_id) {
 }
 
 //ROOM
-bool Database::deleteRoom(int room_id) {
+bool Database::deleteRoom(Database &DB) {
+    int room_id;
+        DB.printGuests();
+        cout << " Enter the room ID to be deleted :: " << endl;
+        cin >> room_id;
         string sql  = "DELETE FROM RoomDetails WHERE id = ?;";
         sqlite3_stmt* stmt;
         int rc = sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, nullptr);

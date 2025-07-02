@@ -3,7 +3,7 @@
 #include "../include/receptionist.h"
 #include "../include/database.h"
 #include "../include/validator.h"
-#include "../include/guest.h"
+
 #include <string.h>
 #include <iomanip>      
 #include <regex>          

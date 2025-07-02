@@ -117,8 +117,8 @@ public:
     int getRoomID(int room_no);
 
     //##-------------------DELETE FUNCTIONALITY IN THE DATABASE---------------------------##
-    bool deleteGuest(int guest_id);
-    bool deleteRoom(int room_id);
+    bool deleteGuest(Database &db);
+    bool deleteRoom(Database &DB);
     bool deleteBooking(int booking_id);
     bool deleteReservation(int reservation_id);
 

@@ -3,12 +3,8 @@
 #include <conio.h>
 #include <sqlite3.h>
 #include "../include/database.h"
-#include "../include/guest.h"
-#include "../include/booking.h"
-#include "../include/billing.h"
-#include "../include/reports.h"
+
 #include "../include/admin.h"
-#include "../include/housekeeping.h"
 #include "../include/receptionist.h"
 #include "../include/validator.h"
 #include "../include/user.h"

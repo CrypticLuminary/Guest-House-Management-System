@@ -17,6 +17,7 @@ public:
     bool addRoom(Database& db, int roomNo, const std::string& roomType, double price);
     void viewAllRooms(Database& db);
     bool admin(Database& db);
+    bool updateRoomDetails(Database &db);
     
 
     // Admin Management
