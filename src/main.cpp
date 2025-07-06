@@ -1,31 +1,14 @@
 #include <iostream>
 #include <string.h>
 #include <conio.h>
-#include <graphics.h>
-#include <winbgim.h>
-#include<string.h>
-#include <chrono>
-#include <thread>
-#include <iostream>
-#include <string>
-using namespace std;
 #include "../include/database.h"
-
-
-
 #include "../include/admin.h"
-
 #include "../include/receptionist.h"
 #include "../include/validator.h"
 #include "../include/user.h"
 #include "../include/staff.h"
-
+#include "../include/room.h"
 using namespace std;
-
-
-
-
-
 
 int main() {
     Database db("guest_house.db");

@@ -269,8 +269,8 @@
 // // db.reservation(1,1,1,"reserved");
 // // db.deleteReservation(1);
 
-// receptionist r;
-// r.cancel_reservation(db);
+// // receptionist r;
+// // r.cancel_reservation(db);
 // // r.checkRoomAvailability(db);
 
 // // int enterTestGuestDetails(Database& db) {

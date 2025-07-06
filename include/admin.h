@@ -29,6 +29,10 @@ public:
     bool manageRoom(Database &db);
     bool managestaff(Database &db);
     bool manage(Database &db);
+    bool addAdmin(Database& db);
+    bool updateAdmin(Database& db);
+    void viewAdmins(Database& db);
+    bool deleteAdmin(Database& db);
 
     // Getters
     int getAdminID() const { return adminID; }

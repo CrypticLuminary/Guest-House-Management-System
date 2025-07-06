@@ -9,7 +9,9 @@ class Validate
 {
     public:
         bool isValidEmail(const string& email);
-        bool isValidNumber(const string& number);      
+        bool isValidNumber(const string& number); 
+        string getpassword();
+             
 };
 
 #endif

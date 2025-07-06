@@ -11,11 +11,17 @@
 #include "../include/staff.h"
 using namespace std;
 
-// Fix function signature - use reference parameters (non-const)
+
+
+
+
 bool staffmanager::loginStaff(Database& db, string& loggedUsername, string& loggedRole) {
     receptionist r;
     string username, password;
-    
+
+Validate v;
+
+
 system("cls");
 cout << "\n";
 cout << "================================================================================\n";
@@ -52,7 +58,7 @@ cout << "+----------------------------------------------------------------------
 cout << "|                              PASSWORD ENTRY                                 |\n";
 cout << "+------------------------------------------------------------------------------+\n";
 cout << "| Password: ";
-getline(cin, password);
+password = v.getpassword();
 cout << "+------------------------------------------------------------------------------+\n";
 
 cout << "\n";
@@ -152,9 +158,10 @@ bool staffmanager::insertStaff(Database& db) {
         return false;
     }
     
-    // Get password
+    Validate v;
+    // Get pass
     cout << "Password: ";
-    getline(cin, password);
+    password = v.getpassword();
     if (password.length() < 6) {
         cout << " Password must be at least 6 characters!" << endl;
         return false;

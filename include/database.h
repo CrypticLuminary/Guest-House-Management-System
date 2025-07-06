@@ -72,7 +72,8 @@ public:
         int guest_id, 
         int room_id, 
         int booking_id, 
-        const string& status);
+        const string& status,
+        string &stay_duration);
 
     //##-----------------UPDATING DATA ON THE DATABASE-------------------------------##
 
@@ -112,6 +113,8 @@ public:
     //##-------------------PRINTING THE DATA IN THE DATABASE----------------------------##
     void printGuests();
     void printRoomDetails();
+    void printGuestBill(); 
+    void generateRevenueReport();
 
     //##-------------------GETTING RELATED DATA-------------------------------------------##
     int getRoomID(int room_no);
@@ -121,6 +124,10 @@ public:
     bool deleteRoom(Database &DB);
     bool deleteBooking(int booking_id);
     bool deleteReservation(int reservation_id);
+
+void viewBookings();
+bool deleteBooking();
+bool updateBooking();
 
 private:
     sqlite3* db;

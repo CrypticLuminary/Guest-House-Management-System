@@ -1,6 +1,8 @@
 #include <conio.h>
 #include <sqlite3.h>
 #include <iostream>
+#include <iomanip>
+#include <ctime>
 #include "../include/database.h"
 
 
@@ -11,8 +13,27 @@
 #include "../include/user.h"
 #include "../include/staff.h"
 staffmanager s;
+using namespace std;
 
-
+// string getHiddenPassword() {
+//     string password;
+//     char ch;
+//     while ((ch = _getch()) != '\r') { // Enter key
+//         if (ch == '\b') { // Backspace
+//             if (!password.empty()) {
+//                 password.pop_back();
+//                 cout << "\b \b";
+//             }
+//         } else if (ch == 3) { // Ctrl+C
+//             exit(0);
+//         } else {
+//             password += ch;
+//             cout << '*'; // Show * for each character
+//         }
+//     }
+//     cout << endl;
+//     return password;
+// }
 
 
 void roomManagementMenu(Database& db);
@@ -20,6 +41,7 @@ void roomManagementMenu(Database& db);
 //____________________MAIN PART OF ADMIN_______________________________
 bool Admin::admin(Database& db) {
 Admin admin;
+Validate v;
 
     if (!admin.hasAdmin(db)) {
         std::cout << "No admin found. Please create an admin account." << std::endl;
@@ -33,7 +55,7 @@ Admin admin;
 
         std::cout << "creedential issue in guest.h"
         << "Enter Admin Password: ";
-        std::getline(std::cin, password);
+        password = v.getpassword();
 
         if (admin.createDefaultAdmin(db, username, email, password)) {
             std::cout << "Admin account created successfully!" << std::endl;
@@ -50,6 +72,7 @@ return 1;
 
 bool Admin::loginAdmin(Database& db) {
     Admin admin;
+    Validate v;
     bool loggedIn = false;
     int attempts = 0;
     const int maxAttempts = 3;
@@ -60,7 +83,7 @@ bool Admin::loginAdmin(Database& db) {
         std::cout << "Enter Username: ";
         std::getline(std::cin, username);
         std::cout << "Enter Password: ";
-        std::getline(std::cin, password);
+        password = v.getpassword();
 
         if (admin.validateAdminLogin(db, username, password)) {
             std::cout << "Login successful! Welcome, " << username << "." << std::endl;
@@ -349,7 +372,7 @@ void guestManagementMenu(Database& db) {
                 
             case 3:
                 cout << "\n--- UPDATE GUEST ---" << endl;
-                // db.updateGuest();
+                rec.updateGuestDetail(db);
                 break;
 
             case 4:
@@ -373,6 +396,77 @@ void guestManagementMenu(Database& db) {
         cin.get();
     }
 }
+
+
+void bookingManagementMenu(Database& db) {
+    while (true) {
+        cout << "\n===== Booking Management Menu =====" << endl;
+        cout << "1. View All Bookings" << endl;
+        cout << "2. Update Booking" << endl;
+        cout << "3. Delete Booking" << endl;
+        cout << "0. Return to Main Menu" << endl;
+        cout << "Enter your choice: ";
+
+        int choice;
+        cin >> choice;
+        cin.ignore();
+
+        switch (choice) {
+            case 1:
+                db.viewBookings();
+                break;
+            case 2:
+                db.updateBooking();
+                break;
+            case 3:
+                db.deleteBooking();
+                break;
+            case 0:
+                cout << "Returning to Main Menu...\n";
+                return;
+            default:
+                cout << "Invalid choice. Please try again.\n";
+        }
+    }
+}
+
+void adminManagementMenu(Database& db) {
+    Admin admin;
+    while (true) {
+        cout << "\n===== Admin Management Menu =====" << endl;
+        cout << "1. Add Admin" << endl;
+        cout << "2. Update Admin" << endl;
+        cout << "3. View All Admins" << endl;
+        cout << "4. Delete Admin" << endl;
+        cout << "0. Return to Main Menu" << endl;
+        cout << "Enter your choice: ";
+
+        int choice;
+        cin >> choice;
+        cin.ignore();
+
+        switch (choice) {
+            case 1:
+                admin.addAdmin(db);
+                break;
+            case 2:
+                admin.updateAdmin(db);
+                break;
+            case 3:
+                admin.viewAdmins(db);
+                break;
+            case 4:
+                admin.deleteAdmin(db);
+                break;
+            case 0:
+                cout << "Returning to Main Menu...\n";
+                return;
+            default:
+                cout << "Invalid choice. Please try again.\n";
+        }
+    }
+}
+
 
 // System Reports Menu
 void systemReportsMenu(Database& db) {
@@ -587,7 +681,7 @@ bool Admin::adminPower(Database &db) {
         cout << "👥 STAFF MANAGEMENT OPTIONS:" << endl;
         cout << "   4. Staff Management" << endl;
         cout << "   5. Admin Management" << endl;
-        // cout << "   6. User Access Control" << endl;
+        cout << "   6. GRMS reports" << endl;
         cout << string(50, '-') << endl;
         
         // cout << " SYSTEM MANAGEMENT OPTIONS:" << endl;
@@ -633,7 +727,7 @@ bool Admin::adminPower(Database &db) {
             
             case 3: {
                 cout << "\n>>> BOOKING MANAGEMENT SELECTED <<<" << endl;
-                // reservationManagementMenu(db);
+                bookingManagementMenu(db);
                 break;
             }
             
@@ -645,7 +739,7 @@ bool Admin::adminPower(Database &db) {
             
             case 5: {
                 cout << "\n>>> ADMIN MANAGEMENT SELECTED <<<" << endl;
-                // adminManagementMenu(db);
+                adminManagementMenu(db);
                 break;
             }
             
@@ -655,11 +749,11 @@ bool Admin::adminPower(Database &db) {
             //     break;
             // }
             
-            // case 7: {
-            //     cout << "\n>>> SYSTEM REPORTS SELECTED <<<" << endl;
-            //     // systemReportsMenu(db);
-            //     break;
-            // }
+            case 6: {
+                cout << "\n>>> GRMS REPORTS SELECTED <<<" << endl;
+                db.generateRevenueReport();
+                break;
+            }
             
             // case 8: {
             //     cout << "\n>>> DATABASE MANAGEMENT SELECTED <<<" << endl;
@@ -787,3 +881,196 @@ bool Admin::addRoom(Database& db, int roomNo, const std::string& roomType, doubl
 void Admin::viewAllRooms(Database& db) {
     db.printRoomDetails();
 }
+
+
+
+// string getCurrentDateTime() {
+//     time_t now = time(0);
+//     tm* t = localtime(&now);
+//     char buf[20];
+//     strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", t);
+//     return string(buf);
+// }
+
+
+
+bool Admin::addAdmin(Database& db) {
+    string email, password;
+    cout << "\n--- ADD ADMIN ---" << endl;
+    cout << "Enter Username: ";
+    getline(cin, username);
+    cout << "Enter Email: ";
+    getline(cin, email);
+    cout << "Enter Password: ";
+    getline(cin, password);
+
+    const char* sql = "INSERT INTO Admin (username, email, password) VALUES (?, ?, ?);";
+    sqlite3_stmt* stmt;
+    int rc = sqlite3_prepare_v2(db.getDb(), sql, -1, &stmt, nullptr);
+    if (rc != SQLITE_OK) {
+        cerr << "Prepare failed: " << sqlite3_errmsg(db.getDb()) << endl;
+        return false;
+    }
+    sqlite3_bind_text(stmt, 1, username.c_str(), -1, SQLITE_STATIC);
+    sqlite3_bind_text(stmt, 2, email.c_str(), -1, SQLITE_STATIC);
+    sqlite3_bind_text(stmt, 3, password.c_str(), -1, SQLITE_STATIC);
+
+    rc = sqlite3_step(stmt);
+    sqlite3_finalize(stmt);
+
+    if (rc == SQLITE_DONE) {
+        cout << "Admin added successfully!\n";
+        return true;
+    } else {
+        cerr << "Failed to add admin: " << sqlite3_errmsg(db.getDb()) << endl;
+        return false;
+    }
+}
+
+
+bool Admin::updateAdmin(Database& db) {
+    Admin admin;
+    admin.viewAdmins(db);
+    cout << "\n--- UPDATE ADMIN ---" << endl;
+    int aid;
+    cout << "Enter Admin ID to update: ";
+    cin >> aid; cin.ignore();
+
+    // Check if exists and fetch current info
+    const char* checkSql = "SELECT username, email FROM Admin WHERE admin_id = ?;";
+    sqlite3_stmt* checkStmt;
+    int rc = sqlite3_prepare_v2(db.getDb(), checkSql, -1, &checkStmt, nullptr);
+    if (rc != SQLITE_OK) {
+        cerr << "Prepare failed: " << sqlite3_errmsg(db.getDb()) << endl;
+        return false;
+    }
+    sqlite3_bind_int(checkStmt, 1, aid);
+    if (sqlite3_step(checkStmt) != SQLITE_ROW) {
+        cout << "No admin found with ID: " << aid << endl;
+        sqlite3_finalize(checkStmt);
+        return false;
+    }
+    string old_username = reinterpret_cast<const char*>(sqlite3_column_text(checkStmt, 0));
+    string old_email = reinterpret_cast<const char*>(sqlite3_column_text(checkStmt, 1));
+    sqlite3_finalize(checkStmt);
+
+    cout << "Updating admin: " << old_username << " (" << old_email << ")" << endl;
+    cout << "Enter new Username (leave blank to keep '" << old_username << "'): ";
+    string new_username; getline(cin, new_username);
+    if (new_username.empty()) new_username = old_username;
+    cout << "Enter new Email (leave blank to keep '" << old_email << "'): ";
+    string new_email; getline(cin, new_email);
+    if (new_email.empty()) new_email = old_email;
+    cout << "Enter new Password (leave blank to keep current): ";
+    string new_password; getline(cin, new_password);
+
+    string sql;
+    if (new_password.empty()) {
+        sql = "UPDATE Admin SET username = ?, email = ? WHERE admin_id = ?;";
+    } else {
+        sql = "UPDATE Admin SET username = ?, email = ?, password = ? WHERE admin_id = ?;";
+    }
+    sqlite3_stmt* stmt;
+    rc = sqlite3_prepare_v2(db.getDb(), sql.c_str(), -1, &stmt, nullptr);
+    if (rc != SQLITE_OK) {
+        cerr << "Prepare failed: " << sqlite3_errmsg(db.getDb()) << endl;
+        return false;
+    }
+    sqlite3_bind_text(stmt, 1, new_username.c_str(), -1, SQLITE_STATIC);
+    sqlite3_bind_text(stmt, 2, new_email.c_str(), -1, SQLITE_STATIC);
+    if (new_password.empty()) {
+        sqlite3_bind_int(stmt, 3, aid);
+    } else {
+        sqlite3_bind_text(stmt, 3, new_password.c_str(), -1, SQLITE_STATIC);
+        sqlite3_bind_int(stmt, 4, aid);
+    }
+
+    rc = sqlite3_step(stmt);
+    sqlite3_finalize(stmt);
+
+    if (rc == SQLITE_DONE) {
+        cout << "Admin updated successfully!\n";
+        return true;
+    } else {
+        cerr << "Failed to update admin: " << sqlite3_errmsg(db.getDb()) << endl;
+        return false;
+    }
+}
+
+
+void Admin::viewAdmins(Database& db) {
+    cout << "\n--- VIEW ADMINS ---" << endl;
+    const char* sql = "SELECT admin_id, username, email FROM Admin ORDER BY admin_id;";
+    sqlite3_stmt* stmt;
+    int rc = sqlite3_prepare_v2(db.getDb(), sql, -1, &stmt, nullptr);
+    if (rc != SQLITE_OK) {
+        cerr << "Prepare failed: " << sqlite3_errmsg(db.getDb()) << endl;
+        return;
+    }
+    cout << left << setw(4) << "ID" << setw(18) << "Username"
+         << setw(30) << "Email" << endl;
+    cout << string(52, '-') << endl;
+    while (sqlite3_step(stmt) == SQLITE_ROW) {
+        int id = sqlite3_column_int(stmt, 0);
+        string uname = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1));
+        string mail = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 2));
+        cout << left << setw(4) << id << setw(18) << uname << setw(30) << mail << endl;
+    }
+    sqlite3_finalize(stmt);
+}
+
+bool Admin::deleteAdmin(Database& db) {
+    Admin admin;
+    admin.viewAdmins(db);
+    cout << "\n--- DELETE ADMIN ---" << endl;
+    int aid;
+    cout << "Enter Admin ID to delete: ";
+    cin >> aid; cin.ignore();
+
+    // Check if exists
+    const char* checkSql = "SELECT username, email FROM Admin WHERE admin_id = ?;";
+    sqlite3_stmt* checkStmt;
+    int rc = sqlite3_prepare_v2(db.getDb(), checkSql, -1, &checkStmt, nullptr);
+    if (rc != SQLITE_OK) {
+        cerr << "Prepare failed: " << sqlite3_errmsg(db.getDb()) << endl;
+        return false;
+    }
+    sqlite3_bind_int(checkStmt, 1, aid);
+    if (sqlite3_step(checkStmt) != SQLITE_ROW) {
+        cout << "No admin found with ID: " << aid << endl;
+        sqlite3_finalize(checkStmt);
+        return false;
+    }
+    string uname = reinterpret_cast<const char*>(sqlite3_column_text(checkStmt, 0));
+    string mail = reinterpret_cast<const char*>(sqlite3_column_text(checkStmt, 1));
+    sqlite3_finalize(checkStmt);
+
+    cout << "Are you sure you want to delete admin '" << uname << " (" << mail << ")'? (y/n): ";
+    char confirm;
+    cin >> confirm; cin.ignore();
+    if (confirm != 'y' && confirm != 'Y') {
+        cout << "Delete operation cancelled.\n";
+        return false;
+    }
+
+    const char* sql = "DELETE FROM Admin WHERE admin_id = ?;";
+    sqlite3_stmt* stmt;
+    rc = sqlite3_prepare_v2(db.getDb(), sql, -1, &stmt, nullptr);
+    if (rc != SQLITE_OK) {
+        cerr << "Prepare failed: " << sqlite3_errmsg(db.getDb()) << endl;
+        return false;
+    }
+    sqlite3_bind_int(stmt, 1, aid);
+
+    rc = sqlite3_step(stmt);
+    sqlite3_finalize(stmt);
+
+    if (rc == SQLITE_DONE) {
+        cout << "Admin deleted successfully!\n";
+        return true;
+    } else {
+        cerr << "Failed to delete admin: " << sqlite3_errmsg(db.getDb()) << endl;
+        return false;
+    }
+}
+

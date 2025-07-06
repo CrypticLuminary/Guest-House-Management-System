@@ -139,7 +139,7 @@ bool isValidPhone(const string& phone) {
 
 int receptionist::enterGuestDetails(Database& db) {
     receptionist r;
-    string fname, lname, contact_info, email, id_proof, relationship, address;
+    string fname, lname, contact_info, email, id_proof, relationship, address, stay_duration;
     
     cout << "\n========== GUEST REGISTRATION ==========" << endl;
     cout << "Enter guest details:" << endl;
@@ -164,11 +164,12 @@ int receptionist::enterGuestDetails(Database& db) {
     
     // Contact Info
     do {
+        Validate v;
         cout << "Contact Number: ";
         getline(cin, contact_info);
         if (contact_info.empty()) {
             cout << " Contact number cannot be empty! Please try again." << endl;
-        } else if (!isValidPhone(contact_info)) {
+        } else if (!v.isValidNumber(contact_info)) {
             cout << " Invalid phone number format! Please try again." << endl;
             contact_info = ""; // Reset to retry
         }
@@ -176,11 +177,12 @@ int receptionist::enterGuestDetails(Database& db) {
     
     // Email
     do {
+        Validate v;
         cout << "Email: ";
         getline(cin, email);
         if (email.empty()) {
             cout << " Email cannot be empty! Please try again." << endl;
-        } else if (!isValidEmail(email)) {
+        } else if (!v.isValidEmail(email)) {
             cout << " Invalid email format! Please try again." << endl;
             email = ""; // Reset to retry
         }
@@ -213,6 +215,14 @@ int receptionist::enterGuestDetails(Database& db) {
     if (address.empty()) {
         address = "Not provided";
     }
+
+    do {
+    cout << "Stay Duration: ";
+    getline(cin, stay_duration);
+    if (stay_duration.empty()) {
+        cout << " Stay Duration cannot be empty! Please try again." << endl;
+    }
+    } while (stay_duration.empty());
   
     cout << "\n========== CONFIRMATION ==========" << endl;
     cout << "Please confirm the following details:" << endl;
@@ -222,6 +232,7 @@ int receptionist::enterGuestDetails(Database& db) {
     cout << "ID Proof: " << id_proof << endl;
     cout << "Relationship: " << relationship << endl;
     cout << "Address: " << address << endl;
+    cout << "Stay Duration: " << stay_duration << endl;
     
     char confirm;
     cout << "\nIs this information correct? (y/n): ";
@@ -241,7 +252,7 @@ int receptionist::enterGuestDetails(Database& db) {
 
             cout << setw(15) << " Enter the room_id of available room " << endl;
             cin >> room_id;
-            db.reservation(guest_id,room_id,0,"reserved");
+            db.reservation(guest_id,room_id,0,"reserved",stay_duration);
             return guest_id;
         } else {
             cout << " Failed to register guest. Please try again." << endl;
@@ -557,7 +568,9 @@ bool receptionist::staffPower(Database& db) {
         cout << "   6. Cancel Reservation" << endl;
         cout << "   7. View Reservations" << endl;
         cout << string(50, '-') << endl;
-        
+
+        cout << "BILLING MANAGEMENT OPTIONS:" << endl;
+        cout << "   8. View Guest Billing" << endl;
         cout << "   0. Exit Staff Panel" << endl;
         cout << string(80, '=') << endl;
         cout << "Enter your choice (0-7): ";
@@ -608,7 +621,7 @@ bool receptionist::staffPower(Database& db) {
                
                 cout << "\n";
 
-                // rec.cancel_reservation(db);
+                updateGuestDetail(db);
                 
                 break;
             }
@@ -665,6 +678,11 @@ bool receptionist::staffPower(Database& db) {
                 }
                 break;
             }
+
+            case 8: {
+                cout << "\n>>> VIEW GUEST BILL SELECTED <<<" << endl;
+                db.printGuestBill();
+            }
             
             case 0: {
                 cout << "\n>>> STAFF PANEL EXIT SELECTED <<<" << endl;
@@ -694,4 +712,132 @@ bool receptionist::staffPower(Database& db) {
     }
 }
 
+bool receptionist::updateGuestDetail(Database &db) {
+    db.printGuests();
+    cout << "\n--- UPDATE GUEST DETAIL ---" << endl;
+    int guest_id;
+    cout << "Enter Guest ID to update: ";
+    cin >> guest_id;
+    cin.ignore();
+
+    // Check if guest exists
+    const char* checkSql = "SELECT first_name, last_name FROM Guests WHERE guest_id = ?;";
+    sqlite3_stmt* checkStmt;
+    int rc = sqlite3_prepare_v2(db.getDb(), checkSql, -1, &checkStmt, nullptr);
+    if (rc != SQLITE_OK) {
+        cerr << "Prepare failed: " << sqlite3_errmsg(db.getDb()) << endl;
+        return false;
+    }
+    sqlite3_bind_int(checkStmt, 1, guest_id);
+    if (sqlite3_step(checkStmt) != SQLITE_ROW) {
+        cout << "No guest found with ID: " << guest_id << endl;
+        sqlite3_finalize(checkStmt);
+        return false;
+    }
+    string old_fname = reinterpret_cast<const char*>(sqlite3_column_text(checkStmt, 0));
+    string old_lname = reinterpret_cast<const char*>(sqlite3_column_text(checkStmt, 1));
+    sqlite3_finalize(checkStmt);
+
+    cout << "Updating guest: " << old_fname << " " << old_lname << endl;
+
+    // Get updated details
+    string fname, lname, contact_info, email, id_proof, relationship, address;
+    cout << "Enter new First Name (leave blank to keep '" << old_fname << "'): ";
+    getline(cin, fname);
+    if (fname.empty()) fname = old_fname;
+
+    cout << "Enter new Last Name (leave blank to keep '" << old_lname << "'): ";
+    getline(cin, lname);
+    if (lname.empty()) lname = old_lname;
+
+    cout << "Enter new Contact Info: "; getline(cin, contact_info);
+    cout << "Enter new Email: "; getline(cin, email);
+    cout << "Enter new ID Proof: "; getline(cin, id_proof);
+    cout << "Enter new Relationship: "; getline(cin, relationship);
+    cout << "Enter new Address: "; getline(cin, address);
+
+    const char* sql = "UPDATE Guests SET first_name = ?, last_name = ?, contact_info = ?, email = ?, id_proof = ?, relationship = ?, address = ? WHERE guest_id = ?;";
+    sqlite3_stmt* stmt;
+    rc = sqlite3_prepare_v2(db.getDb(), sql, -1, &stmt, nullptr);
+    if (rc != SQLITE_OK) {
+        cerr << "Prepare failed: " << sqlite3_errmsg(db.getDb()) << endl;
+        return false;
+    }
+    sqlite3_bind_text(stmt, 1, fname.c_str(), -1, SQLITE_STATIC);
+    sqlite3_bind_text(stmt, 2, lname.c_str(), -1, SQLITE_STATIC);
+    sqlite3_bind_text(stmt, 3, contact_info.c_str(), -1, SQLITE_STATIC);
+    sqlite3_bind_text(stmt, 4, email.c_str(), -1, SQLITE_STATIC);
+    sqlite3_bind_text(stmt, 5, id_proof.c_str(), -1, SQLITE_STATIC);
+    sqlite3_bind_text(stmt, 6, relationship.c_str(), -1, SQLITE_STATIC);
+    sqlite3_bind_text(stmt, 7, address.c_str(), -1, SQLITE_STATIC);
+    sqlite3_bind_int(stmt, 8, guest_id);
+
+    rc = sqlite3_step(stmt);
+    sqlite3_finalize(stmt);
+
+    if (rc == SQLITE_DONE) {
+        cout << "Guest details updated successfully!" << endl;
+        return true;
+    } else {
+        cerr << "Failed to update guest: " << sqlite3_errmsg(db.getDb()) << endl;
+        return false;
+    }
+}
+
+// Delete Guest Detail
+bool receptionist::deleteGuestDetail(Database &db) {
+    
+    cout << "\n--- DELETE GUEST DETAIL ---" << endl;
+    int guest_id;
+    cout << "Enter Guest ID to delete: ";
+    cin >> guest_id;
+    cin.ignore();
+
+    // Optionally confirm deletion
+    cout << "Are you sure you want to delete guest ID " << guest_id << "? (y/n): ";
+    char confirm;
+    cin >> confirm; cin.ignore();
+    if (confirm != 'y' && confirm != 'Y') {
+        cout << "Delete operation cancelled." << endl;
+        return false;
+    }
+
+    // Check if guest exists
+    const char* checkSql = "SELECT fname, lname FROM Guests WHERE guest_id = ?;";
+    sqlite3_stmt* checkStmt;
+    int rc = sqlite3_prepare_v2(db.getDb(), checkSql, -1, &checkStmt, nullptr);
+    if (rc != SQLITE_OK) {
+        cerr << "Prepare failed: " << sqlite3_errmsg(db.getDb()) << endl;
+        return false;
+    }
+    sqlite3_bind_int(checkStmt, 1, guest_id);
+    if (sqlite3_step(checkStmt) != SQLITE_ROW) {
+        cout << "No guest found with ID: " << guest_id << endl;
+        sqlite3_finalize(checkStmt);
+        return false;
+    }
+    string fname = reinterpret_cast<const char*>(sqlite3_column_text(checkStmt, 0));
+    string lname = reinterpret_cast<const char*>(sqlite3_column_text(checkStmt, 1));
+    sqlite3_finalize(checkStmt);
+
+    const char* sql = "DELETE FROM Guests WHERE guest_id = ?;";
+    sqlite3_stmt* stmt;
+    rc = sqlite3_prepare_v2(db.getDb(), sql, -1, &stmt, nullptr);
+    if (rc != SQLITE_OK) {
+        cerr << "Prepare failed: " << sqlite3_errmsg(db.getDb()) << endl;
+        return false;
+    }
+
+    sqlite3_bind_int(stmt, 1, guest_id);
+    rc = sqlite3_step(stmt);
+    sqlite3_finalize(stmt);
+
+    if (rc == SQLITE_DONE) {
+        cout << "Guest '" << fname << " " << lname << "' deleted successfully!" << endl;
+        return true;
+    } else {
+        cerr << "Failed to delete guest: " << sqlite3_errmsg(db.getDb()) << endl;
+        return false;
+    }
+}
 

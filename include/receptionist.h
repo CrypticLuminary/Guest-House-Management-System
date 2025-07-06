@@ -21,6 +21,8 @@ public:
     int cancel_reservation(Database& db);
     int view_reservations(Database& db);
     bool staffPower(Database& db);
+    bool updateGuestDetail(Database& db);
+    bool deleteGuestDetail(Database& db);
 };
 
 #endif
