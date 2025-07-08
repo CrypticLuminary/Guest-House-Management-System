@@ -34,6 +34,11 @@ public:
     void viewAdmins(Database& db);
     bool deleteAdmin(Database& db);
 
+    void viewAllRoomFacilities(Database& db);
+    void updateFacilityStatus(Database& db);
+    void removeFacility(Database& db);
+    void viewFacilitiesByRoomType(Database& db);
+
     // Getters
     int getAdminID() const { return adminID; }
     std::string getUsername() const { return username; }

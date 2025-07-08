@@ -111,7 +111,7 @@ const char* createStaffTable =
                             "room_id INTEGER REFERENCES RoomDetails(room_id) ON DELETE CASCADE, "
                             "check_in_date DATE DEFAULT (DATE('now')), "
                             "check_out_date DATE NULL, "
-                            "total_amount REAL"
+                            "total_amount REAL, "
                             "stay_duration INTEGER, "
                             "booking_status TEXT CHECK(booking_status IN ('confirmed', 'cancelled', 'checked out')) DEFAULT 'confirmed');";
 
@@ -287,8 +287,8 @@ bool Database::createTriggrs() {
                           "FOR EACH ROW "
                           "WHEN NEW.booking_id IS NULL "
                           "BEGIN "
-                              "INSERT INTO Booking (guest_id, room_id, check_in_date, check_out_date, booking_status) "
-                              "VALUES (NEW.guest_id, NEW.room_id, NEW.check_in_date, NEW.check_out_date, 'confirmed'); "
+                              "INSERT INTO Booking (guest_id, room_id, check_in_date, check_out_date, booking_status, stay_duration) "
+                              "VALUES (NEW.guest_id, NEW.room_id, NEW.check_in_date, NEW.check_out_date, 'confirmed', NEW.stay_duration); "
                               
                               "UPDATE Reservations "
                               "SET booking_id = last_insert_rowid() "
@@ -375,16 +375,16 @@ bool Database::createTriggrs() {
     END;
     )SQL";
 
-    const char* trigger9 = R"SQL(
-    CREATE TRIGGER IF NOT EXISTS insert_booking_on_reservation
-    AFTER INSERT ON Reservation
-    FOR EACH ROW
-    WHEN NEW.stay_duration IS NOT NULL AND NEW.stay_duration > 0
-    BEGIN
-        INSERT INTO Booking (guest_id, room_id, check_in_date, stay_duration, booking_status)
-        VALUES (NEW.guest_id, NEW.room_id, NEW.check_in_date, NEW.stay_duration, 'confirmed');
-    END;
-    )SQL";
+    // const char* trigger9 = R"SQL(
+    // CREATE TRIGGER IF NOT EXISTS insert_booking_on_reservation
+    // AFTER INSERT ON Reservations
+    // FOR EACH ROW
+    // WHEN NEW.stay_duration IS NOT NULL AND NEW.stay_duration > 0
+    // BEGIN
+    //     INSERT INTO Booking (guest_id, room_id, check_in_date, stay_duration, booking_status)
+    //     VALUES (NEW.guest_id, NEW.room_id, NEW.check_in_date, NEW.stay_duration, 'confirmed');
+    // END;
+    // )SQL";
 
 
     char* errMsg = nullptr;
@@ -398,7 +398,7 @@ bool Database::createTriggrs() {
     sqlite3_exec(db, trigger6, nullptr, nullptr, &errMsg);
     sqlite3_exec(db, trigger7, nullptr, nullptr, &errMsg);
     sqlite3_exec(db, trigger8, nullptr, nullptr, &errMsg);
-    sqlite3_exec(db, trigger9, nullptr, nullptr, &errMsg);
+    // sqlite3_exec(db, trigger9, nullptr, nullptr, &errMsg);
     
     
     cout << "All triggers created successfully!" << endl;
@@ -587,7 +587,7 @@ bool Database::booking (int guest_id, int room_id, const string& booking_status)
 // Option 1: Pass 0 for booking_id, let trigger handle it
 
 // Option 2: Modify reservation function to auto-generate booking_id
-bool Database::reservation(int guest_id, int room_id, int booking_id, const string& booking_status, string &stay_duration) {
+bool Database::reservation(int guest_id, int room_id, int booking_id, const string& booking_status, int stay_duration) {
     // Let the trigger create the booking automatically
     const char* sqlInsertReservation = "INSERT INTO Reservations (guest_id, room_id, booking_status,stay_duration) "
                                       "VALUES (?, ?, ?, ?);";
@@ -602,7 +602,7 @@ bool Database::reservation(int guest_id, int room_id, int booking_id, const stri
     sqlite3_bind_int(stmt, 1, guest_id);
     sqlite3_bind_int(stmt, 2, room_id);
     sqlite3_bind_text(stmt, 3, booking_status.c_str(), -1, SQLITE_STATIC);
-    sqlite3_bind_text(stmt, 4, stay_duration.c_str(), -1, SQLITE_STATIC);
+    sqlite3_bind_int(stmt, 4, stay_duration);
 
     rc = sqlite3_step(stmt);
     if (rc != SQLITE_DONE) {
@@ -1379,7 +1379,7 @@ void Database::generateRevenueReport() {
     // 1. Total revenue for all bookings in this date range (by check-out date)
     const char* totalSql =
         "SELECT IFNULL(SUM(total_amount), 0) FROM Booking "
-        "WHERE check_out_date BETWEEN ? AND ? AND booking_status IN ('Confirmed', 'Completed');";
+        "WHERE check_out_date BETWEEN ? AND ? AND booking_status IN ('confirmed', 'checked out');";
     sqlite3_stmt* stmt;
     int rc = sqlite3_prepare_v2(db, totalSql, -1, &stmt, nullptr);
     if (rc != SQLITE_OK) {
@@ -1402,7 +1402,7 @@ void Database::generateRevenueReport() {
     const char* typeSql =
         "SELECT r.room_type, IFNULL(SUM(b.total_amount),0) as sum "
         "FROM Booking b JOIN RoomDetails r ON b.room_id = r.room_id "
-        "WHERE b.check_out_date BETWEEN ? AND ? AND b.booking_status IN ('Confirmed', 'Completed') "
+        "WHERE b.check_out_date BETWEEN ? AND ? AND b.booking_status IN ('confirmed', 'checked out') "
         "GROUP BY r.room_type;";
     rc = sqlite3_prepare_v2(db, typeSql, -1, &stmt, nullptr);
     if (rc != SQLITE_OK) {
@@ -1425,7 +1425,7 @@ void Database::generateRevenueReport() {
     // 3. Number of Bookings and Average Revenue per Booking
     const char* countSql =
         "SELECT COUNT(*), IFNULL(AVG(total_amount),0) FROM Booking "
-        "WHERE check_out_date BETWEEN ? AND ? AND booking_status IN ('checked_out');";
+        "WHERE check_out_date BETWEEN ? AND ? AND booking_status IN ('checked out');";
     rc = sqlite3_prepare_v2(db, countSql, -1, &stmt, nullptr);
     if (rc != SQLITE_OK) {
         cerr << "Prepare failed: " << sqlite3_errmsg(db) << endl;
@@ -1452,7 +1452,7 @@ void Database::generateRevenueReport() {
     cin.ignore();
     if (show == 'y' || show == 'Y') {
         const char* listSql =
-            "SELECT b.booking_id, g.fname, g.lname, r.room_no, r.room_type, "
+            "SELECT b.booking_id, g.first_name, g.last_name, r.room_no, r.room_type, "
             "b.check_in_date, b.check_out_date, b.total_amount, b.booking_status "
             "FROM Booking b "
             "JOIN Guests g ON b.guest_id = g.guest_id "

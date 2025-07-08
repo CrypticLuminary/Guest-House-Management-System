@@ -17,13 +17,12 @@ int ch, room;
 
 void receptionist::checkRoomAvailability(Database& db, const string& check_in_date, const string& check_out_date) {
     cout << "\n=== ROOM AVAILABILITY CHECK ===" << endl;
-
     cout << string(90, '=') << endl;
     
     // Query to get all rooms with their status and price
     const char* sql = "SELECT rd.room_id, rd.room_no, rd.room_type, rd.status, rd.price_per_night "
                       "FROM RoomDetails rd "
-                      "ORDER BY rd.room_no;";
+                      "ORDER BY rd.room_type, rd.room_no;";
     
     sqlite3_stmt* stmt;
     int rc = sqlite3_prepare_v2(db.getDb(), sql, -1, &stmt, nullptr);
@@ -34,8 +33,8 @@ void receptionist::checkRoomAvailability(Database& db, const string& check_in_da
     }
     
     // Vectors to store available and occupied rooms
-    vector<tuple<int, int, string, double>> availableRooms;
-    vector<tuple<int, int, string, double>> occupiedRooms;
+    vector<tuple<int, int, string, double, string>> availableRooms;
+    vector<tuple<int, int, string, double, string>> occupiedRooms;
     
     int totalRooms = 0;
     
@@ -52,71 +51,110 @@ void receptionist::checkRoomAvailability(Database& db, const string& check_in_da
         string roomTypeStr = roomType ? roomType : "N/A";
         string statusStr = status ? status : "N/A";
         
+        // Get facilities for this room
+        string facilities = getRoomFacilities(db, roomId);
+        
         // Categorize rooms
         if (statusStr == "available" || statusStr == "Available") {
-            availableRooms.push_back(make_tuple(roomId, roomNo, roomTypeStr, price));
+            availableRooms.push_back(make_tuple(roomId, roomNo, roomTypeStr, price, facilities));
         } else {
-            occupiedRooms.push_back(make_tuple(roomId, roomNo, roomTypeStr, price));
+            occupiedRooms.push_back(make_tuple(roomId, roomNo, roomTypeStr, price, facilities));
         }
     }
     
     sqlite3_finalize(stmt);
     
-    // Display Available Rooms
+    // Display Available Rooms with Facilities
     cout << "\nAVAILABLE ROOMS:" << endl;
-    cout << string(80, '-') << endl;
-    cout << left << setw(10) << "Room ID" 
-         << setw(10) << "Room No" 
-         << setw(20) << "Room Type"
-         << setw(15) << "Price/Night" << endl;
-    cout << string(80, '-') << endl;
+    cout << string(120, '-') << endl;
+    cout << left << setw(8) << "Room ID" 
+         << setw(8) << "Room #" 
+         << setw(15) << "Room Type"
+         << setw(12) << "Price/Night"
+         << setw(50) << "Facilities" << endl;
+    cout << string(120, '-') << endl;
     
     if (availableRooms.empty()) {
         cout << "No available rooms found." << endl;
     } else {
         for (const auto& room : availableRooms) {
-            cout << left << setw(10) << get<0>(room)
-                 << setw(10) << get<1>(room)
-                 << setw(20) << get<2>(room)
-                 << setw(12) << fixed << setprecision(2) << "$" << get<3>(room) << endl;
+            cout << left << setw(8) << get<0>(room)
+                 << setw(8) << get<1>(room)
+                 << setw(15) << get<2>(room)
+                 << setw(12) << fixed << setprecision(2) << "$" << get<3>(room)
+                 << setw(50) << get<4>(room) << endl;
         }
     }
     
-    cout << string(80, '-') << endl;
+    cout << string(120, '-') << endl;
     cout << "Total Available Rooms: " << availableRooms.size() << endl;
     
-    // Display Occupied Rooms
-    cout << "\nOCCUPIED ROOMS:" << endl;
-    cout << string(80, '-') << endl;
-    cout << left << setw(10) << "Room ID" 
-         << setw(10) << "Room No" 
-         << setw(20) << "Room Type"
-         << setw(15) << "Price/Night" << endl;
-    cout << string(80, '-') << endl;
+    // Display room type summary with common facilities
+    displayRoomTypeSummary(db);
     
-    if (occupiedRooms.empty()) {
-        cout << "No occupied rooms found." << endl;
-    } else {
-        for (const auto& room : occupiedRooms) {
-            cout << left << setw(10) << get<0>(room)
-                 << setw(10) << get<1>(room)
-                 << setw(20) << get<2>(room)
-                 << setw(15) << fixed << setprecision(2) << "$" << get<3>(room) << endl;
+    // Rest of your existing code for occupied rooms...
+}
+
+// Helper function to get facilities for a specific room
+string receptionist::getRoomFacilities(Database& db, int room_id) {
+    const char* sql = "SELECT facility_name FROM RoomFacilities WHERE room_id = ? AND availability = 'Available' ORDER BY facility_name;";
+    sqlite3_stmt* stmt;
+    string facilities = "";
+    
+    int rc = sqlite3_prepare_v2(db.getDb(), sql, -1, &stmt, nullptr);
+    if (rc == SQLITE_OK) {
+        sqlite3_bind_int(stmt, 1, room_id);
+        
+        while (sqlite3_step(stmt) == SQLITE_ROW) {
+            if (!facilities.empty()) facilities += ", ";
+            facilities += (char*)sqlite3_column_text(stmt, 0);
         }
     }
+    sqlite3_finalize(stmt);
     
-    cout << string(80, '-') << endl;
-    cout << "Total Occupied Rooms: " << occupiedRooms.size() << endl;
+    return facilities.empty() ? "No facilities" : facilities;
+}
+
+// Function to display room type summary with facilities
+void receptionist::displayRoomTypeSummary(Database& db) {
+    cout << "\n=== ROOM TYPES & COMMON FACILITIES ===" << endl;
     
-    // Display Overall Summary
-    cout << "\nOVERALL SUMMARY:" << endl;
-    cout << string(80, '=') << endl;
-    cout << "Total Rooms: " << totalRooms << endl;
-    cout << "Available Rooms: " << availableRooms.size() << endl;
-    cout << "Occupied Rooms: " << occupiedRooms.size() << endl;
-    cout << string(80, '=') << endl;
+    const char* sql = R"(
+        SELECT rd.room_type, 
+               GROUP_CONCAT(DISTINCT rf.facility_name) as facilities,
+               COUNT(DISTINCT rd.room_id) as total_rooms,
+               AVG(rd.price_per_night) as avg_price
+        FROM RoomDetails rd
+        LEFT JOIN RoomFacilities rf ON rd.room_id = rf.room_id AND rf.availability = 'Available'
+        GROUP BY rd.room_type
+        ORDER BY rd.room_type;
+    )";
     
-  
+    sqlite3_stmt* stmt;
+    int rc = sqlite3_prepare_v2(db.getDb(), sql, -1, &stmt, nullptr);
+    
+    if (rc == SQLITE_OK) {
+        cout << string(100, '-') << endl;
+        cout << left << setw(15) << "Room Type" 
+             << setw(10) << "Rooms"
+             << setw(12) << "Avg Price"
+             << setw(50) << "Common Facilities" << endl;
+        cout << string(100, '-') << endl;
+        
+        while (sqlite3_step(stmt) == SQLITE_ROW) {
+            string roomType = (char*)sqlite3_column_text(stmt, 0);
+            string facilities = sqlite3_column_text(stmt, 1) ? (char*)sqlite3_column_text(stmt, 1) : "None";
+            int totalRooms = sqlite3_column_int(stmt, 2);
+            double avgPrice = sqlite3_column_double(stmt, 3);
+            
+            cout << left << setw(15) << roomType
+                 << setw(10) << totalRooms
+                 << setw(12) << fixed << setprecision(2) << "$" << avgPrice
+                 << setw(50) << facilities << endl;
+        }
+        cout << string(100, '-') << endl;
+    }
+    sqlite3_finalize(stmt);
 }
 
 
@@ -139,8 +177,9 @@ bool isValidPhone(const string& phone) {
 
 int receptionist::enterGuestDetails(Database& db) {
     receptionist r;
-    string fname, lname, contact_info, email, id_proof, relationship, address, stay_duration;
-    
+    int stay_duration;
+    string fname, lname, contact_info, email, id_proof, relationship, address;
+    r.checkRoomAvailability(db);
     cout << "\n========== GUEST REGISTRATION ==========" << endl;
     cout << "Enter guest details:" << endl;
     
@@ -216,13 +255,14 @@ int receptionist::enterGuestDetails(Database& db) {
         address = "Not provided";
     }
 
-    do {
     cout << "Stay Duration: ";
-    getline(cin, stay_duration);
-    if (stay_duration.empty()) {
-        cout << " Stay Duration cannot be empty! Please try again." << endl;
-    }
-    } while (stay_duration.empty());
+    cin >> stay_duration;
+
+    // do {
+    // if (stay_duration.empty()) {
+    //     cout << " Stay Duration cannot be empty! Please try again." << endl;
+    // }
+    // } while (stay_duration.empty());
   
     cout << "\n========== CONFIRMATION ==========" << endl;
     cout << "Please confirm the following details:" << endl;
@@ -246,7 +286,7 @@ int receptionist::enterGuestDetails(Database& db) {
         if (guest_id > 0) {
             cout << " Guest registered successfully!" << endl;
             cout << "Guest ID: " << guest_id << endl;
-            r.checkRoomAvailability(db);
+          
             int room_id;
             cout << "\n\n";
 

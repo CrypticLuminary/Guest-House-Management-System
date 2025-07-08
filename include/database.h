@@ -73,7 +73,7 @@ public:
         int room_id, 
         int booking_id, 
         const string& status,
-        string &stay_duration);
+        int stay_duration);
 
     //##-----------------UPDATING DATA ON THE DATABASE-------------------------------##
 

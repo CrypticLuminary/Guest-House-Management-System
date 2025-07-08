@@ -4,12 +4,11 @@
 // #include <winbgim.h>
 // #include<string.h>
 // #include "../include/database.h"
-// #include "../include/guest.h"
-// #include "../include/booking.h"
-// #include "../include/billing.h"
-// #include "../include/reports.h"
+// #include "../include/receptionist.h"
+
+
 // #include "../include/admin.h"
-// #include "../include/housekeeping.h"
+
 // using namespace std;
 
 // // ## ___________TTESTING GRAPHICS_______________
@@ -58,7 +57,7 @@
 //     // // Close the database
 //     // db.close();
 
-//     Guest g;
+//     // Guest g;
 //     // g.add_customer();
 //     // g.check_availability();
 //     // g.update_reservation();
@@ -241,8 +240,8 @@
 // // string roomType;
 // // int price;
 
-// Admin admin;
-// admin.admin(db);
+// // Admin admin;
+// // admin.admin(db);
 // // admin.setAdminInfo(1, "admin_user", "Manager");
 
 // // // Test room management
@@ -266,7 +265,7 @@
 // // admin.viewAllRooms(db);
 
 // // _______________________________________TESTING RESERVATION__________________________
-// // db.reservation(1,1,1,"reserved");
+// db.reservation(1,1,1,"reserved",2);
 // // db.deleteReservation(1);
 
 // // receptionist r;

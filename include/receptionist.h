@@ -23,6 +23,8 @@ public:
     bool staffPower(Database& db);
     bool updateGuestDetail(Database& db);
     bool deleteGuestDetail(Database& db);
+    string getRoomFacilities(Database& db, int room_id);
+    void displayRoomTypeSummary(Database& db);
 };
 
 #endif
