@@ -335,3 +335,20 @@ bool RoomFacilities::deleteFacility(Database &db) {
         return false;
     }
 }
+
+int getNextRoomNumber(sqlite3* db) {
+
+    const char* sql = "SELECT IFNULL(MAX(room_no), 100) + 1 FROM RoomDetails;";
+    sqlite3_stmt* stmt;
+    int next_room_no = 101; 
+
+    if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) == SQLITE_OK) {
+        if (sqlite3_step(stmt) == SQLITE_ROW) {
+            next_room_no = sqlite3_column_int(stmt, 0);
+        }
+        sqlite3_finalize(stmt);
+    } else {
+        std::cerr << "Failed to prepare statement for next room number." << std::endl;
+    }
+    return next_room_no;
+}

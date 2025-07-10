@@ -114,7 +114,7 @@ public:
     void printGuests();
     void printRoomDetails();
     void printGuestBill(); 
-    void generateRevenueReport();
+    void generateRevenueReport(Database &db);
 
     //##-------------------GETTING RELATED DATA-------------------------------------------##
     int getRoomID(int room_no);

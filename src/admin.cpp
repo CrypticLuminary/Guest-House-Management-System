@@ -583,30 +583,27 @@ void facilitiesManagementMenu(Database& db) {
                 if (availability.empty()) availability = "Available";
                 
                 // Add facility to database
-                const char* sql = "INSERT INTO RoomFacilities (room_id, facility_name, availability, description) "
-                                 "VALUES (?, ?, ?, ?, ?, ?);";
-                sqlite3_stmt* stmt;
-                int rc = sqlite3_prepare_v2(db.getDb(), sql, -1, &stmt, nullptr);
-                
-                if (rc == SQLITE_OK) {
+               const char* sql = "INSERT INTO RoomFacilities (room_id, facility_name, availability, description) "
+                  "VALUES (?, ?, ?, ?);";
+                    sqlite3_stmt* stmt;
+                    int rc = sqlite3_prepare_v2(db.getDb(), sql, -1, &stmt, nullptr);
 
-                    sqlite3_bind_int(stmt, 1, room_id);
-                    sqlite3_bind_text(stmt, 2, facility_name.c_str(), -1, SQLITE_STATIC);
-                    sqlite3_bind_text(stmt, 3, availability.c_str(), -1, SQLITE_STATIC);
-                    sqlite3_bind_text(stmt, 4, description.c_str(), -1, SQLITE_STATIC);
+                    if (rc == SQLITE_OK) {
+                        sqlite3_bind_int(stmt, 1, room_id);
+                        sqlite3_bind_text(stmt, 2, facility_name.c_str(), -1, SQLITE_STATIC);
+                        sqlite3_bind_text(stmt, 3, availability.c_str(), -1, SQLITE_STATIC);
+                        sqlite3_bind_text(stmt, 4, description.c_str(), -1, SQLITE_STATIC);
 
-                    
-                    rc = sqlite3_step(stmt);
-                    if (rc == SQLITE_DONE) {
-                        cout << "Facility added successfully!" << endl;
-                       
+                        rc = sqlite3_step(stmt);
+                        if (rc == SQLITE_DONE) {
+                            cout << "Facility added successfully!" << endl;
+                        } else {
+                            cout << "Failed to add facility: " << sqlite3_errmsg(db.getDb()) << endl;
+                        }
                     } else {
-                        cout << "Failed to add facility: " << sqlite3_errmsg(db.getDb()) << endl;
+                        cout << "Database error: " << sqlite3_errmsg(db.getDb()) << endl;
                     }
-                } else {
-                    cout << "Database error: " << sqlite3_errmsg(db.getDb()) << endl;
-                }
-                sqlite3_finalize(stmt);
+                    sqlite3_finalize(stmt);
                 break;
             }
             
@@ -1035,7 +1032,7 @@ bool Admin::adminPower(Database &db) {
             
             case 6: {
                 cout << "\n>>> GRMS REPORTS SELECTED <<<" << endl;
-                db.generateRevenueReport();
+                db.generateRevenueReport(db);
                 break;
             }
             

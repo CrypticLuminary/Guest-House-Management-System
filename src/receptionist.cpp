@@ -722,6 +722,7 @@ bool receptionist::staffPower(Database& db) {
             case 8: {
                 cout << "\n>>> VIEW GUEST BILL SELECTED <<<" << endl;
                 db.printGuestBill();
+                break;
             }
             
             case 0: {
