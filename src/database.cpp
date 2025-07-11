@@ -1,5 +1,6 @@
 #include "../include/database.h"
 #include "../include/sqlite3.h"
+#include "../include/validator.h"
 #include <iostream>
 #include <ctime>
 #include <iomanip>
@@ -375,16 +376,15 @@ bool Database::createTriggrs() {
     END;
     )SQL";
 
-    // const char* trigger9 = R"SQL(
-    // CREATE TRIGGER IF NOT EXISTS insert_booking_on_reservation
-    // AFTER INSERT ON Reservations
-    // FOR EACH ROW
-    // WHEN NEW.stay_duration IS NOT NULL AND NEW.stay_duration > 0
-    // BEGIN
-    //     INSERT INTO Booking (guest_id, room_id, check_in_date, stay_duration, booking_status)
-    //     VALUES (NEW.guest_id, NEW.room_id, NEW.check_in_date, NEW.stay_duration, 'confirmed');
-    // END;
-    // )SQL";
+    // const char* trigger9 = R"(
+    //     CREATE TRIGGER IF NOT EXISTS handle_reservation_cancellation
+    //     AFTER UPDATE OF booking_status ON Reservations
+    //     FOR EACH ROW
+    //     WHEN NEW.booking_status = 'cancelled' AND OLD.booking_status != 'cancelled'
+    //     BEGIN
+    //         DELETE FROM Reservations WHERE reservation_id = NEW.reservation_id;
+    //     END;
+    // )";
 
 
     char* errMsg = nullptr;
@@ -468,7 +468,7 @@ int Database::insertGuest(const string& fname, const string& lname, const string
 
 // STAFF_DETAILS
 bool Database::insertStaffDetails(const string& fname, const string& lname, const string& contact_info, const string& email, const string& id_proof, const string& relationship, const string& address) {
-    const char* sqlStaffDetails = "INSERT INTO StaffDetails (first_name, last_name, contact_info, email, id_proof, address) VALUES (?, ?, ?, ?, ?, ?, ?);";
+    const char* sqlStaffDetails = "INSERT INTO StaffDetails (first_name, last_name, contact_info, email, id_proof,relationship, address) VALUES (?, ?, ?, ?, ?, ?, ?);";
     sqlite3_stmt* stmt;
     int rc = sqlite3_prepare_v2(db, sqlStaffDetails, -1, &stmt, nullptr);
     if (rc != SQLITE_OK) {
@@ -780,7 +780,7 @@ bool Database::updateGuest(vector<int> guest_id, const string& fname, const stri
         sqlite3_bind_text(stmt, paramIndex++, relationship.c_str(), -1, SQLITE_STATIC);
     }
     if (!address.empty()) {
-        sqlite3_bind_text(stmt, paramIndex++, relationship.c_str(), -1, SQLITE_STATIC);
+        sqlite3_bind_text(stmt, paramIndex++, address.c_str(), -1, SQLITE_STATIC);
     }
 
     // Bind the admin_id for the WHERE clause
@@ -1021,24 +1021,61 @@ void Database::printGuests() {
         return;
     }
 
-    cout << "Guests:" << endl;
+
+    cout << string(120, '-') << endl;
+    
+    // Simple header
+    cout << left 
+         << setw(5) << "ID"
+         << setw(15) << "First Name"
+         << setw(15) << "Last Name"
+         << setw(15) << "Contact"
+         << setw(25) << "Email"
+         << setw(20) << "ID Proof"
+         << setw(25) << "Address" << endl;
+    cout << string(120, '-') << endl;
+
+    int count = 0;
     while ((rc = sqlite3_step(stmt)) == SQLITE_ROW) {
+        count++;
+        
         int guest_id = sqlite3_column_int(stmt, 0);
         const unsigned char* fname = sqlite3_column_text(stmt, 1);
         const unsigned char* lname = sqlite3_column_text(stmt, 2);
         const unsigned char* contact_info = sqlite3_column_text(stmt, 3);
         const unsigned char* email = sqlite3_column_text(stmt, 4);
         const unsigned char* id_proof = sqlite3_column_text(stmt, 5);
-        const unsigned char* address = sqlite3_column_text(stmt, 6);
+        const unsigned char* address = sqlite3_column_text(stmt, 7);
 
-        cout << "ID: " << guest_id
-                  << ", FIrst_Name: " << fname
-                  << ", Last_Name: " << lname
-                  << ", Email: " << email
-                  << ", Contact: " << contact_info
-                  << ", ID_Proof: " << id_proof
-                  << ", Address: " << address << std::endl;
+        // Handle NULL values
+        string firstName = fname ? (char*)fname : "N/A";
+        string lastName = lname ? (char*)lname : "N/A";
+        string contact = contact_info ? (char*)contact_info : "N/A";
+        string emailStr = email ? (char*)email : "N/A";
+        string idProof = id_proof ? (char*)id_proof : "N/A";
+        string addressStr = address ? (char*)address : "N/A";
+        
+        // Truncate long text for table display
+        if (firstName.length() > 14) firstName = firstName.substr(0, 11) + "...";
+        if (lastName.length() > 14) lastName = lastName.substr(0, 11) + "...";
+        if (contact.length() > 14) contact = contact.substr(0, 11) + "...";
+        if (emailStr.length() > 24) emailStr = emailStr.substr(0, 21) + "...";
+        if (idProof.length() > 19) idProof = idProof.substr(0, 16) + "...";
+        if (addressStr.length() > 24) addressStr = addressStr.substr(0, 21) + "...";
+
+        cout << left 
+             << setw(5) << guest_id
+             << setw(15) << firstName
+             << setw(15) << lastName
+             << setw(15) << contact
+             << setw(25) << emailStr
+             << setw(20) << idProof
+             << setw(25) << addressStr << endl;
     }
+
+    cout << string(120, '-') << endl;
+    cout << "Total guests: " << count << endl;
+    cout << "Report generated by: CrypticLuminary" << endl;
 
     sqlite3_finalize(stmt);
 }
@@ -1127,10 +1164,10 @@ bool Database::deleteGuest(Database &db) {
 //ROOM
 bool Database::deleteRoom(Database &DB) {
     int room_id;
-        DB.printGuests();
+        DB.printRoomDetails();
         cout << " Enter the room ID to be deleted :: " << endl;
         cin >> room_id;
-        string sql  = "DELETE FROM RoomDetails WHERE id = ?;";
+        string sql  = "DELETE FROM RoomDetails WHERE room_id = ?;";
         sqlite3_stmt* stmt;
         int rc = sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, nullptr);
         if(rc != SQLITE_OK) {
@@ -1384,93 +1421,295 @@ void askMonthRange(string& fromDate, string& toDate) {
 }
 
 void Database::generateRevenueReport(Database &db) {
+    Validate c;
     cout << "\n--- REVENUE REPORT ---" << endl;
-
 
     string fromDate, toDate;
     askMonthRange(fromDate, toDate);
 
     cout << "\nRevenue Report for period: " << fromDate << " to " << toDate << endl;
+    cout << string(80, '=') << endl;
 
-    // 1. Total revenue for all bookings in this date range (by check-out date)
-    const char* totalSql =
-        "SELECT IFNULL(SUM(total_amount), 0) FROM Booking "
-        "WHERE check_out_date BETWEEN ? AND ? AND booking_status IN ('confirmed', 'checked out');";
+    // 1. Calculate total revenue using room prices and stay duration
+    const char* totalSql = R"(
+        SELECT 
+            IFNULL(SUM(
+                CASE 
+                    WHEN b.total_amount IS NOT NULL AND b.total_amount > 0 THEN b.total_amount
+                    ELSE (b.stay_duration * rd.price_per_night)
+                END
+            ), 0) as revenue
+        FROM Booking b 
+        JOIN RoomDetails rd ON b.room_id = rd.room_id
+        WHERE (b.check_out_date BETWEEN ? AND ? OR (b.check_out_date IS NULL AND b.check_in_date BETWEEN ? AND ?)) 
+        AND b.booking_status IN ('confirmed', 'checked out')
+    )";
+    
     sqlite3_stmt* stmt;
-    int rc = sqlite3_prepare_v2(db.getDb(), totalSql, -1, &stmt, nullptr);
+    int rc = sqlite3_prepare_v2(getDb(), totalSql, -1, &stmt, nullptr);
     if (rc != SQLITE_OK) {
-        cerr << "Prepare failed: " << sqlite3_errmsg(db.getDb()) << endl;
+        cerr << "Prepare failed: " << sqlite3_errmsg(getDb()) << endl;
         return;
     }
     sqlite3_bind_text(stmt, 1, fromDate.c_str(), -1, SQLITE_STATIC);
     sqlite3_bind_text(stmt, 2, toDate.c_str(), -1, SQLITE_STATIC);
+    sqlite3_bind_text(stmt, 3, fromDate.c_str(), -1, SQLITE_STATIC);
+    sqlite3_bind_text(stmt, 4, toDate.c_str(), -1, SQLITE_STATIC);
 
-    double total = 0;
+    double totalRevenue = 0;
     if (sqlite3_step(stmt) == SQLITE_ROW) {
-        total = sqlite3_column_double(stmt, 0);
+        totalRevenue = sqlite3_column_double(stmt, 0);
     }
     sqlite3_finalize(stmt);
 
     cout << fixed << setprecision(2);
-    cout << "\nTotal Revenue: $" << total << endl;
+    cout << "\nTOTAL GUESTHOUSE REVENUE: $" << totalRevenue << endl;
+    cout << string(50, '-') << endl;
 
-    // 2. Revenue by Room Type
-    const char* typeSql =
-        "SELECT r.room_type, IFNULL(SUM(b.total_amount),0) as sum "
-        "FROM Booking b JOIN RoomDetails r ON b.room_id = r.room_id "
-        "WHERE b.check_out_date BETWEEN ? AND ? AND b.booking_status IN ('confirmed', 'checked out') "
-        "GROUP BY r.room_type;";
-    rc = sqlite3_prepare_v2(db.getDb(), typeSql, -1, &stmt, nullptr);
+    // 2. Revenue breakdown by room type
+    const char* typeSql = R"(
+        SELECT 
+            rd.room_type,
+            COUNT(*) as bookings,
+            IFNULL(SUM(
+                CASE 
+                    WHEN b.total_amount IS NOT NULL AND b.total_amount > 0 THEN b.total_amount
+                    ELSE (b.stay_duration * rd.price_per_night)
+                END
+            ), 0) as revenue,
+            AVG(rd.price_per_night) as avg_price
+        FROM Booking b 
+        JOIN RoomDetails rd ON b.room_id = rd.room_id
+        WHERE (b.check_out_date BETWEEN ? AND ? OR (b.check_out_date IS NULL AND b.check_in_date BETWEEN ? AND ?)) 
+        AND b.booking_status IN ('confirmed', 'checked out')
+        GROUP BY rd.room_type
+        ORDER BY revenue DESC
+    )";
+    
+    rc = sqlite3_prepare_v2(getDb(), typeSql, -1, &stmt, nullptr);
     if (rc != SQLITE_OK) {
-        cerr << "Prepare failed: " << sqlite3_errmsg(db.getDb()) << endl;
+        cerr << "Prepare failed: " << sqlite3_errmsg(getDb()) << endl;
         return;
     }
     sqlite3_bind_text(stmt, 1, fromDate.c_str(), -1, SQLITE_STATIC);
     sqlite3_bind_text(stmt, 2, toDate.c_str(), -1, SQLITE_STATIC);
+    sqlite3_bind_text(stmt, 3, fromDate.c_str(), -1, SQLITE_STATIC);
+    sqlite3_bind_text(stmt, 4, toDate.c_str(), -1, SQLITE_STATIC);
 
-    cout << "\nRevenue by Room Type:\n";
-    cout << left << setw(15) << "Room Type" << right << setw(12) << "Revenue\n";
-    cout << "------------------------------\n";
+    cout << "\nRevenue by Room Type:" << endl;
+    cout << left << setw(15) << "Room Type" 
+         << right << setw(10) << "Bookings" 
+         << setw(12) << "Revenue" 
+         << setw(12) << "Avg Price" << endl;
+    cout << string(60, '-') << endl;
+    
     while (sqlite3_step(stmt) == SQLITE_ROW) {
-        string t = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 0));
-        double s = sqlite3_column_double(stmt, 1);
-        cout << left << setw(15) << t << right << setw(12) << s << endl;
+        string roomType = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 0));
+        int bookings = sqlite3_column_int(stmt, 1);
+        double revenue = sqlite3_column_double(stmt, 2);
+        double avgPrice = sqlite3_column_double(stmt, 3);
+        
+        cout << left << setw(15) << roomType 
+             << right << setw(10) << bookings
+             << setw(12) << "$" << revenue 
+             << setw(11) << "$" << avgPrice << endl;
     }
     sqlite3_finalize(stmt);
 
-    // 3. Number of Bookings and Average Revenue per Booking
-    const char* countSql =
-        "SELECT COUNT(*), IFNULL(AVG(total_amount),0) FROM Booking "
-        "WHERE check_out_date BETWEEN ? AND ? AND booking_status IN ('checked out');";
-    rc = sqlite3_prepare_v2(db.getDb(), countSql, -1, &stmt, nullptr);
+    // 3. Detailed booking statistics
+    const char* statsSql = R"(
+        SELECT 
+            COUNT(*) as total_bookings,
+            IFNULL(AVG(
+                CASE 
+                    WHEN b.total_amount IS NOT NULL AND b.total_amount > 0 THEN b.total_amount
+                    ELSE (b.stay_duration * rd.price_per_night)
+                END
+            ), 0) as avg_revenue,
+            SUM(b.stay_duration) as total_nights,
+            AVG(b.stay_duration) as avg_stay,
+            MIN(rd.price_per_night) as min_rate,
+            MAX(rd.price_per_night) as max_rate
+        FROM Booking b 
+        JOIN RoomDetails rd ON b.room_id = rd.room_id
+        WHERE (b.check_out_date BETWEEN ? AND ? OR (b.check_out_date IS NULL AND b.check_in_date BETWEEN ? AND ?)) 
+        AND b.booking_status IN ('confirmed', 'checked out')
+    )";
+    
+    rc = sqlite3_prepare_v2(getDb(), statsSql, -1, &stmt, nullptr);
     if (rc != SQLITE_OK) {
-        cerr << "Prepare failed: " << sqlite3_errmsg(db.getDb()) << endl;
+        cerr << "Prepare failed: " << sqlite3_errmsg(getDb()) << endl;
         return;
     }
     sqlite3_bind_text(stmt, 1, fromDate.c_str(), -1, SQLITE_STATIC);
     sqlite3_bind_text(stmt, 2, toDate.c_str(), -1, SQLITE_STATIC);
+    sqlite3_bind_text(stmt, 3, fromDate.c_str(), -1, SQLITE_STATIC);
+    sqlite3_bind_text(stmt, 4, toDate.c_str(), -1, SQLITE_STATIC);
 
-    int nbook = 0;
-    double avg = 0;
     if (sqlite3_step(stmt) == SQLITE_ROW) {
-        nbook = sqlite3_column_int(stmt, 0);
-        avg = sqlite3_column_double(stmt, 1);
+        int totalBookings = sqlite3_column_int(stmt, 0);
+        double avgRevenue = sqlite3_column_double(stmt, 1);
+        int totalNights = sqlite3_column_int(stmt, 2);
+        double avgStay = sqlite3_column_double(stmt, 3);
+        double minRate = sqlite3_column_double(stmt, 4);
+        double maxRate = sqlite3_column_double(stmt, 5);
+        
+        cout << "\nBooking Statistics:" << endl;
+        cout << string(40, '-') << endl;
+        cout << "Total Bookings: " << totalBookings << endl;
+        cout << "Total Nights Booked: " << totalNights << endl;
+        cout << "Average Revenue per Booking: $" << avgRevenue << endl;
+        cout << "Average Stay Duration: " << fixed << setprecision(1) << avgStay << " nights" << endl;
+        cout << "Room Rate Range: $" << fixed << setprecision(2) << minRate << " - $" << maxRate << endl;
+        
+        if (totalNights > 0) {
+            cout << "Average Revenue per Night: $" << (totalRevenue / totalNights) << endl;
+        }
     }
     sqlite3_finalize(stmt);
 
-    cout << "\nTotal Bookings: " << nbook << endl;
-    cout << "Average Revenue per Booking: $" << avg << endl;
+    // 4. Monthly comparison (if applicable)
+    if (totalRevenue > 0) {
+        // Calculate occupancy rate
+        const char* occupancySql = R"(
+            SELECT 
+                COUNT(DISTINCT rd.room_id) as total_rooms,
+                COUNT(DISTINCT b.room_id) as occupied_rooms
+            FROM RoomDetails rd
+            LEFT JOIN Booking b ON rd.room_id = b.room_id 
+                AND (b.check_out_date BETWEEN ? AND ? OR (b.check_out_date IS NULL AND b.check_in_date BETWEEN ? AND ?))
+                AND b.booking_status IN ('confirmed', 'checked out')
+        )";
+        
+        rc = sqlite3_prepare_v2(getDb(), occupancySql, -1, &stmt, nullptr);
+        if (rc == SQLITE_OK) {
+            sqlite3_bind_text(stmt, 1, fromDate.c_str(), -1, SQLITE_STATIC);
+            sqlite3_bind_text(stmt, 2, toDate.c_str(), -1, SQLITE_STATIC);
+            sqlite3_bind_text(stmt, 3, fromDate.c_str(), -1, SQLITE_STATIC);
+            sqlite3_bind_text(stmt, 4, toDate.c_str(), -1, SQLITE_STATIC);
+            
+            if (sqlite3_step(stmt) == SQLITE_ROW) {
+                int totalRooms = sqlite3_column_int(stmt, 0);
+                int occupiedRooms = sqlite3_column_int(stmt, 1);
+                
+                cout << "\nOccupancy Analysis:" << endl;
+                cout << string(30, '-') << endl;
+                cout << "Total Rooms: " << totalRooms << endl;
+                cout << "Rooms with Bookings: " << occupiedRooms << endl;
+                if (totalRooms > 0) {
+                    double occupancyRate = (double)occupiedRooms / totalRooms * 100;
+                    cout << "Room Utilization: " << fixed << setprecision(1) << occupancyRate << "%" << endl;
+                }
+            }
+        }
+        sqlite3_finalize(stmt);
+    }
 
-    // 4. Optionally: List of bookings in this period
-    cout << "\nShow list of bookings in this period? (y/n): ";
+    // 5. Optional detailed booking list
+    cout << "\nShow detailed booking list? (y/n): ";
     char show;
     cin >> show;
     cin.ignore();
+    
     if (show == 'y' || show == 'Y') {
-       db.viewBookings();
+        const char* listSql = R"(
+            SELECT 
+                b.booking_id,
+                g.first_name,
+                g.last_name,
+                rd.room_no,
+                rd.room_type,
+                b.check_in_date,
+                b.check_out_date,
+                b.stay_duration,
+                rd.price_per_night,
+                CASE 
+                    WHEN b.total_amount IS NOT NULL AND b.total_amount > 0 THEN b.total_amount
+                    ELSE (b.stay_duration * rd.price_per_night)
+                END as calculated_amount,
+                b.booking_status
+            FROM Booking b 
+            JOIN Guests g ON b.guest_id = g.guest_id
+            JOIN RoomDetails rd ON b.room_id = rd.room_id
+            WHERE (b.check_out_date BETWEEN ? AND ? OR (b.check_out_date IS NULL AND b.check_in_date BETWEEN ? AND ?)) 
+            AND b.booking_status IN ('confirmed', 'checked out')
+            ORDER BY b.check_in_date DESC
+        )";
+        
+        rc = sqlite3_prepare_v2(getDb(), listSql, -1, &stmt, nullptr);
+        if (rc != SQLITE_OK) {
+            cerr << "Prepare failed: " << sqlite3_errmsg(getDb()) << endl;
+            return;
+        }
+        sqlite3_bind_text(stmt, 1, fromDate.c_str(), -1, SQLITE_STATIC);
+        sqlite3_bind_text(stmt, 2, toDate.c_str(), -1, SQLITE_STATIC);
+        sqlite3_bind_text(stmt, 3, fromDate.c_str(), -1, SQLITE_STATIC);
+        sqlite3_bind_text(stmt, 4, toDate.c_str(), -1, SQLITE_STATIC);
+
+        cout << "\nDetailed Booking List:" << endl;
+        cout << string(120, '=') << endl;
+        cout << left 
+             << setw(5) << "ID" 
+             << setw(20) << "Guest Name"
+             << setw(8) << "Room#"
+             << setw(12) << "Type"
+             << setw(12) << "Check-in"
+             << setw(12) << "Check-out"
+             << setw(6) << "Nights"
+             << setw(10) << "Rate/Night"
+             << setw(10) << "Total"
+             << setw(12) << "Status" << endl;
+        cout << string(120, '-') << endl;
+        
+        while (sqlite3_step(stmt) == SQLITE_ROW) {
+            int bookingId = sqlite3_column_int(stmt, 0);
+            string firstName = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1));
+            string lastName = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 2));
+            int roomNo = sqlite3_column_int(stmt, 3);
+            string roomType = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 4));
+            string checkIn = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 5));
+            string checkOut = sqlite3_column_text(stmt, 6) ? 
+                             reinterpret_cast<const char*>(sqlite3_column_text(stmt, 6)) : "Ongoing";
+            int stayDuration = sqlite3_column_int(stmt, 7);
+            double pricePerNight = sqlite3_column_double(stmt, 8);
+            double calculatedAmount = sqlite3_column_double(stmt, 9);
+            string status = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 10));
+            
+            string guestName = firstName + " " + lastName;
+            if (guestName.length() > 19) guestName = guestName.substr(0, 16) + "...";
+            
+            cout << left 
+                 << setw(5) << bookingId
+                 << setw(20) << guestName
+                 << setw(8) << roomNo
+                 << setw(12) << roomType.substr(0, 11)
+                 << setw(12) << checkIn
+                 << setw(12) << checkOut.substr(0, 11)
+                 << setw(6) << stayDuration
+                 << setw(10) << c.formatCurrency(pricePerNight)
+                 << setw(10) << c.formatCurrency(calculatedAmount)
+                 << setw(12) << status << endl;
+        }
+        sqlite3_finalize(stmt);
+        cout << string(120, '=') << endl;
     }
 
-    cout << "\nEnd of Revenue Report.\n";
+    // Summary
+    cout << "\nREVENUE SUMMARY:" << endl;
+    cout << string(40, '=') << endl;
+    cout << "Period: " << fromDate << " to " << toDate << endl;
+    cout << "TOTAL GUESTHOUSE REVENUE: $" << totalRevenue << endl;
+    
+    // Calculate tax and net revenue
+    double taxRate = 0.13; // 13% tax
+    double taxAmount = totalRevenue * taxRate;
+    double netRevenue = totalRevenue - taxAmount;
+    
+    cout << "Gross Revenue: $" << totalRevenue << endl;
+    cout << "Tax (13%): $" << taxAmount << endl;
+    cout << "Net Revenue: $" << netRevenue << endl;
+    cout << string(40, '=') << endl;
+    cout << "End of Revenue Report." << endl;
 }
 
 

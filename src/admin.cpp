@@ -53,8 +53,7 @@ Validate v;
         std::cout << "Enter Admin Email: ";
         std::getline(std::cin, email);
 
-        std::cout << "creedential issue in guest.h"
-        << "Enter Admin Password: ";
+        std::cout <<  "Enter Admin Password: ";
         password = v.getpassword();
 
         if (admin.createDefaultAdmin(db, username, email, password)) {
@@ -207,7 +206,7 @@ void roomManagementMenu(Database& db) {
         cout << "1. Add New Room" << endl;
         cout << "2. View All Rooms" << endl;
         cout << "3. Update Room Details" << endl;
-        cout << "4. Delete Room" << endl;
+        // cout << "4. Delete Room" << endl;
         // cout << "5. Room Status Management" << endl;
         cout << "0. Back to Main Menu" << endl;
         cout << "Enter choice: ";
@@ -241,6 +240,7 @@ void roomManagementMenu(Database& db) {
                 getline(cin, status);
                 
                 db.insertRoomDetails(room_no, room_type, price_per_night, status);
+                break;
             }
             case 2:
                 cout << "\n--- ALL ROOMS ---" << endl;
@@ -253,10 +253,10 @@ void roomManagementMenu(Database& db) {
                 a.updateRoomDetails(db);
                 break;
                 
-            case 4:
-                cout << "\n--- DELETE ROOM ---" << endl;
-                db.deleteRoom(db);
-                break;
+            // case 4:
+            //     cout << "\n--- DELETE ROOM ---" << endl;
+            //     db.deleteRoom(db);
+            //     break;
                 
             // case 5:
             //     cout << "\n--- ROOM STATUS MANAGEMENT ---" << endl;
@@ -349,7 +349,7 @@ void guestManagementMenu(Database& db) {
         cout << "1. View All Guests" << endl;
         cout << "2. Add New Guest" << endl;
         cout << "3. Update Guest Details" << endl;
-        cout << "4. Delete guest" << endl;
+        cout << "4. Remove guest" << endl;
         // cout << "4. Guest History Report" << endl;
         cout << "0. Back to Main Menu" << endl;
         cout << "Enter choice: ";
@@ -375,7 +375,7 @@ void guestManagementMenu(Database& db) {
                 break;
 
             case 4:
-                cout << "\n--- UPDATE GUEST ---" << endl;
+                cout << "\n--- REMOVE GUEST ---" << endl;
                 db.deleteGuest(db);
                 break;
                 
@@ -402,7 +402,7 @@ void bookingManagementMenu(Database& db) {
         cout << "\n===== Booking Management Menu =====" << endl;
         cout << "1. View All Bookings" << endl;
         cout << "2. Update Booking" << endl;
-        cout << "3. Delete Booking" << endl;
+        // cout << "3. Delete Booking" << endl;
         cout << "0. Return to Main Menu" << endl;
         cout << "Enter your choice: ";
 
@@ -417,9 +417,9 @@ void bookingManagementMenu(Database& db) {
             case 2:
                 db.updateBooking();
                 break;
-            case 3:
-                db.deleteBooking();
-                break;
+            // case 3:
+            //     db.deleteBooking();
+            //     break;
             case 0:
                 cout << "Returning to Main Menu...\n";
                 return;
@@ -958,7 +958,7 @@ bool Admin::adminPower(Database &db) {
         cout << "   3. Booking Management" << endl;
         cout << string(50, '-') << endl;
         
-        cout << "👥 STAFF MANAGEMENT OPTIONS:" << endl;
+        cout << " STAFF MANAGEMENT OPTIONS:" << endl;
         cout << "   4. Staff Management" << endl;
         cout << "   5. Admin Management" << endl;
         cout << "   6. GRMS reports" << endl;
@@ -979,10 +979,10 @@ bool Admin::adminPower(Database &db) {
         
         cout << "   0. Exit Admin Panel" << endl;
         cout << string(80, '=') << endl;
-        cout << "Enter your choice (0-7): ";
+        cout << "Enter your choice (0-8): ";
         
         cin >> choice;
-        cin.ignore(); // Clear input buffer
+        cin.ignore(); 
 
         if (cin.fail()) {
             cin.clear();

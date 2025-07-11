@@ -1,4 +1,5 @@
 #include<iostream>
+#include <iomanip>
 #include<regex>
 #include<string>   
 #include<cctype>
@@ -48,4 +49,16 @@ string Validate::getpassword() {
     }
     cout << endl;
     return password;
+}
+
+
+bool Validate::isValidName(const std::string& name) {
+    std::regex namePattern("^[A-Za-z]+$");
+    return std::regex_match(name, namePattern);
+}
+
+string Validate::formatCurrency(double amount) {
+    stringstream ss;
+    ss << "$" << fixed << setprecision(2) << amount;
+    return ss.str();
 }

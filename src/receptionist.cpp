@@ -14,58 +14,63 @@ int ch, room;
 
 
 
-
-void receptionist::checkRoomAvailability(Database& db, const string& check_in_date, const string& check_out_date) {
+bool receptionist::checkRoomAvailability(Database& db, const string& check_in_date, const string& check_out_date) {
     cout << "\n=== ROOM AVAILABILITY CHECK ===" << endl;
     cout << string(90, '=') << endl;
     
-    // Query to get all rooms with their status and price
-    const char* sql = "SELECT rd.room_id, rd.room_no, rd.room_type, rd.status, rd.price_per_night "
-                      "FROM RoomDetails rd "
-                      "ORDER BY rd.room_type, rd.room_no;";
+    
+    const char* sql = R"(
+        SELECT rd.room_id, rd.room_no, rd.room_type, rd.status, rd.price_per_night 
+        FROM RoomDetails rd
+        WHERE rd.status = 'Available' 
+        AND rd.room_id NOT IN (
+            SELECT DISTINCT r.room_id 
+            FROM Reservations r 
+            WHERE r.booking_status IN ('reserved', 'confirmed')
+            AND (
+                (? BETWEEN r.check_in_date AND COALESCE(r.check_out_date, DATE('now', '+30 days')))
+                OR 
+                (? BETWEEN r.check_in_date AND COALESCE(r.check_out_date, DATE('now', '+30 days')))
+                OR
+                (r.check_in_date BETWEEN ? AND ?)
+            )
+        )
+        ORDER BY rd.room_type, rd.room_no;
+    )";
     
     sqlite3_stmt* stmt;
     int rc = sqlite3_prepare_v2(db.getDb(), sql, -1, &stmt, nullptr);
     
     if (rc != SQLITE_OK) {
         cout << "Error preparing query: " << sqlite3_errmsg(db.getDb()) << endl;
-        return;
+        return false;
     }
     
-    // Vectors to store available and occupied rooms
+    // Use provided dates or defaults
+    string checkin = check_in_date.empty() ? "DATE('now')" : check_in_date;
+    string checkout = check_out_date.empty() ? "DATE('now', '+1 day')" : check_out_date;
+    
+    sqlite3_bind_text(stmt, 1, checkin.c_str(), -1, SQLITE_STATIC);
+    sqlite3_bind_text(stmt, 2, checkout.c_str(), -1, SQLITE_STATIC);
+    sqlite3_bind_text(stmt, 3, checkin.c_str(), -1, SQLITE_STATIC);
+    sqlite3_bind_text(stmt, 4, checkout.c_str(), -1, SQLITE_STATIC);
+    
     vector<tuple<int, int, string, double, string>> availableRooms;
-    vector<tuple<int, int, string, double, string>> occupiedRooms;
     
-    int totalRooms = 0;
-    
-    // Collect room data
     while (sqlite3_step(stmt) == SQLITE_ROW) {
-        totalRooms++;
-        
         int roomId = sqlite3_column_int(stmt, 0);
         int roomNo = sqlite3_column_int(stmt, 1);
-        const char* roomType = (const char*)sqlite3_column_text(stmt, 2);
-        const char* status = (const char*)sqlite3_column_text(stmt, 3);
+        string roomType = (const char*)sqlite3_column_text(stmt, 2);
         double price = sqlite3_column_double(stmt, 4);
-        
-        string roomTypeStr = roomType ? roomType : "N/A";
-        string statusStr = status ? status : "N/A";
-        
-        // Get facilities for this room
         string facilities = getRoomFacilities(db, roomId);
         
-        // Categorize rooms
-        if (statusStr == "available" || statusStr == "Available") {
-            availableRooms.push_back(make_tuple(roomId, roomNo, roomTypeStr, price, facilities));
-        } else {
-            occupiedRooms.push_back(make_tuple(roomId, roomNo, roomTypeStr, price, facilities));
-        }
+        availableRooms.push_back(make_tuple(roomId, roomNo, roomType, price, facilities));
     }
     
     sqlite3_finalize(stmt);
     
-    // Display Available Rooms with Facilities
-    cout << "\nAVAILABLE ROOMS:" << endl;
+    // Display results
+    cout << "\nAVAILABLE ROOMS "  << ":" << endl;
     cout << string(120, '-') << endl;
     cout << left << setw(8) << "Room ID" 
          << setw(8) << "Room #" 
@@ -75,27 +80,25 @@ void receptionist::checkRoomAvailability(Database& db, const string& check_in_da
     cout << string(120, '-') << endl;
     
     if (availableRooms.empty()) {
-        cout << "No available rooms found." << endl;
-    } else {
-        for (const auto& room : availableRooms) {
-            cout << left << setw(8) << get<0>(room)
-                 << setw(8) << get<1>(room)
-                 << setw(15) << get<2>(room)
-                 << setw(12) << fixed << setprecision(2) << "$" << get<3>(room)
-                 << setw(50) << get<4>(room) << endl;
-        }
+        cout << "No available rooms found for the specified dates." << endl;
+        return false;
+    }
+    Validate x;
+    for (const auto& room : availableRooms) {
+        cout << left << setw(8) << get<0>(room)
+             << setw(8) << get<1>(room)
+             << setw(15) << get<2>(room)
+             << setw(12) << setprecision(2) << x.formatCurrency(get<3>(room))
+             << setw(50) << get<4>(room) << endl;
     }
     
     cout << string(120, '-') << endl;
     cout << "Total Available Rooms: " << availableRooms.size() << endl;
     
-    // Display room type summary with common facilities
     displayRoomTypeSummary(db);
-    
-    // Rest of your existing code for occupied rooms...
+    return true;
 }
 
-// Helper function to get facilities for a specific room
 string receptionist::getRoomFacilities(Database& db, int room_id) {
     const char* sql = "SELECT facility_name FROM RoomFacilities WHERE room_id = ? AND availability = 'Available' ORDER BY facility_name;";
     sqlite3_stmt* stmt;
@@ -115,7 +118,7 @@ string receptionist::getRoomFacilities(Database& db, int room_id) {
     return facilities.empty() ? "No facilities" : facilities;
 }
 
-// Function to display room type summary with facilities
+
 void receptionist::displayRoomTypeSummary(Database& db) {
     cout << "\n=== ROOM TYPES & COMMON FACILITIES ===" << endl;
     
@@ -132,7 +135,7 @@ void receptionist::displayRoomTypeSummary(Database& db) {
     
     sqlite3_stmt* stmt;
     int rc = sqlite3_prepare_v2(db.getDb(), sql, -1, &stmt, nullptr);
-    
+    Validate p;
     if (rc == SQLITE_OK) {
         cout << string(100, '-') << endl;
         cout << left << setw(15) << "Room Type" 
@@ -149,7 +152,7 @@ void receptionist::displayRoomTypeSummary(Database& db) {
             
             cout << left << setw(15) << roomType
                  << setw(10) << totalRooms
-                 << setw(12) << fixed << setprecision(2) << "$" << avgPrice
+                 << setw(12) << fixed << setprecision(2) << p.formatCurrency(avgPrice)
                  << setw(50) << facilities << endl;
         }
         cout << string(100, '-') << endl;
@@ -176,59 +179,62 @@ bool isValidPhone(const string& phone) {
 
 
 int receptionist::enterGuestDetails(Database& db) {
-    receptionist r;
+    Validate v;
     int stay_duration;
     string fname, lname, contact_info, email, id_proof, relationship, address;
-    r.checkRoomAvailability(db);
+    
     cout << "\n========== GUEST REGISTRATION ==========" << endl;
+
+    cout << string(50, '-') << endl;
+    
+  
+    if (!checkSimpleRoomAvailability(db)) {
+        cout << "No rooms available. Cannot proceed with guest registration." << endl;
+        return 0;
+    }
+    
+    selectRoomSimple(db, 0);
+
     cout << "Enter guest details:" << endl;
     
     // First Name
     do {
         cout << "First Name: ";
         getline(cin, fname);
-        if (fname.empty()) {
-            cout << " First name cannot be empty! Please try again." << endl;
+        if (fname.empty() || !v.isValidName(fname)) {
+            cout << "Invalid first name! Please try again." << endl;
         }
-    } while (fname.empty());
+    } while (fname.empty() || !v.isValidName(fname));
     
     // Last Name
     do {
         cout << "Last Name: ";
         getline(cin, lname);
-        if (lname.empty()) {
-            cout << " Last name cannot be empty! Please try again." << endl;
+        if (lname.empty() || !v.isValidName(lname)) {
+            cout << "Invalid last name! Please try again." << endl;
         }
-    } while (lname.empty());
+    } while (lname.empty() || !v.isValidName(lname));
     
     // Contact Info
     do {
-        Validate v;
         cout << "Contact Number: ";
         getline(cin, contact_info);
-        if (contact_info.empty()) {
-            cout << " Contact number cannot be empty! Please try again." << endl;
-        } else if (!v.isValidNumber(contact_info)) {
-            cout << " Invalid phone number format! Please try again." << endl;
-            contact_info = ""; // Reset to retry
+        if (contact_info.empty() || !v.isValidNumber(contact_info)) {
+            cout << "Invalid contact number! Please try again." << endl;
         }
-    } while (contact_info.empty());
+    } while (contact_info.empty() || !v.isValidNumber(contact_info));
     
     // Email
     do {
-        Validate v;
         cout << "Email: ";
         getline(cin, email);
-        if (email.empty()) {
-            cout << " Email cannot be empty! Please try again." << endl;
-        } else if (!v.isValidEmail(email)) {
-            cout << " Invalid email format! Please try again." << endl;
-            email = ""; // Reset to retry
+        if (email.empty() || !v.isValidEmail(email)) {
+            cout << "Invalid email! Please try again." << endl;
         }
-    } while (email.empty());
+    } while (email.empty() || !v.isValidEmail(email));
     
     // ID Proof
-    cout << "ID Proof (e.g., Passport, Driver's License): ";
+    cout << "ID Proof: ";
     getline(cin, id_proof);
     if (id_proof.empty()) {
         id_proof = "Not provided";
@@ -238,15 +244,10 @@ int receptionist::enterGuestDetails(Database& db) {
     do {
         cout << "Relationship Status (single/married): ";
         getline(cin, relationship);
-        if (!relationship.empty() && relationship != "single" && relationship != "married") {
-            cout << " Please enter either 'single' or 'married'!" << endl;
-            relationship = ""; 
+        if (relationship != "single" && relationship != "married") {
+            cout << "Please enter 'single' or 'married'!" << endl;
         }
-    } while (!relationship.empty() && relationship != "single" && relationship != "married");
-    
-    if (relationship.empty()) {
-        relationship = "single";
-    }
+    } while (relationship != "single" && relationship != "married");
     
     // Address
     cout << "Address: ";
@@ -255,24 +256,25 @@ int receptionist::enterGuestDetails(Database& db) {
         address = "Not provided";
     }
 
-    cout << "Stay Duration: ";
-    cin >> stay_duration;
-
-    // do {
-    // if (stay_duration.empty()) {
-    //     cout << " Stay Duration cannot be empty! Please try again." << endl;
-    // }
-    // } while (stay_duration.empty());
+    // Stay Duration
+    do {
+        cout << "Stay Duration (days): ";
+        cin >> stay_duration;
+        cin.ignore();
+        if (stay_duration <= 0) {
+            cout << "Stay duration must be at least 1 day!" << endl;
+        }
+    } while (stay_duration <= 0);
   
+    // Confirmation
     cout << "\n========== CONFIRMATION ==========" << endl;
-    cout << "Please confirm the following details:" << endl;
     cout << "Name: " << fname << " " << lname << endl;
     cout << "Contact: " << contact_info << endl;
     cout << "Email: " << email << endl;
     cout << "ID Proof: " << id_proof << endl;
     cout << "Relationship: " << relationship << endl;
     cout << "Address: " << address << endl;
-    cout << "Stay Duration: " << stay_duration << endl;
+    cout << "Stay Duration: " << stay_duration << " days" << endl;
     
     char confirm;
     cout << "\nIs this information correct? (y/n): ";
@@ -280,29 +282,239 @@ int receptionist::enterGuestDetails(Database& db) {
     cin.ignore(); 
     
     if (confirm == 'y' || confirm == 'Y') {
-       
+
         int guest_id = db.insertGuest(fname, lname, contact_info, email, id_proof, relationship, address);
         
         if (guest_id > 0) {
-            cout << " Guest registered successfully!" << endl;
-            cout << "Guest ID: " << guest_id << endl;
+            cout << "Guest registered successfully! Guest ID: " << guest_id << endl;
+            
+            int room_id = selectRoomSimple(db, stay_duration);
           
-            int room_id;
-            cout << "\n\n";
-
-            cout << setw(15) << " Enter the room_id of available room " << endl;
-            cin >> room_id;
-            db.reservation(guest_id,room_id,0,"reserved",stay_duration);
-            return guest_id;
+            
+            if (room_id > 0) {
+                if (db.reservation(guest_id, room_id, 0, "reserved", stay_duration)) {
+                    cout << "Reservation created successfully!" << endl;
+                    return guest_id;
+                } else {
+                    cout << "Failed to create reservation." << endl;
+                    return guest_id;
+                }
+            } else {
+                cout << "No room selected. Guest registered without reservation." << endl;
+                return guest_id;
+            }
         } else {
-            cout << " Failed to register guest. Please try again." << endl;
+            cout << "Failed to register guest." << endl;
             return -1;
         }
-
     } else {
-        cout << " Guest registration cancelled." << endl;
+        cout << "Guest registration cancelled." << endl;
         return -1;
     }
+}
+
+
+bool receptionist::checkSimpleRoomAvailability(Database& db) {
+    const char* sql = R"(
+        SELECT COUNT(*) FROM RoomDetails rd
+        WHERE rd.status = 'Available'
+        AND rd.room_id NOT IN (
+            SELECT DISTINCT r.room_id 
+            FROM Reservations r 
+            WHERE r.booking_status IN ('reserved', 'confirmed')
+            AND (r.check_out_date IS NULL OR r.check_out_date >= DATE('now'))
+        )
+    )";
+    
+    sqlite3_stmt* stmt;
+    int rc = sqlite3_prepare_v2(db.getDb(), sql, -1, &stmt, nullptr);
+    
+    if (rc != SQLITE_OK) {
+        cout << "Database error checking availability." << endl;
+        return false;
+    }
+    
+    int availableCount = 0;
+    if (sqlite3_step(stmt) == SQLITE_ROW) {
+        availableCount = sqlite3_column_int(stmt, 0);
+    }
+    
+    sqlite3_finalize(stmt);
+    return availableCount > 0;
+}
+
+
+int receptionist::selectRoomSimple(Database& db, int stay_duration) {
+    cout << "\n========== AVAILABLE ROOMS ==========" << endl;
+    cout << "Available rooms for " << stay_duration << " days:" << endl;
+    cout << string(120, '-') << endl;
+    
+   
+    const char* sql = R"(
+        SELECT rd.room_id, rd.room_no, rd.room_type, rd.price_per_night, rd.status
+        FROM RoomDetails rd
+        WHERE rd.status = 'Available'
+        AND rd.room_id NOT IN (
+            SELECT DISTINCT r.room_id 
+            FROM Reservations r 
+            WHERE r.booking_status IN ('reserved', 'confirmed')
+            AND (r.check_out_date IS NULL OR r.check_out_date >= DATE('now'))
+        )
+        ORDER BY rd.room_type, rd.room_no
+    )";
+    
+    sqlite3_stmt* stmt;
+    int rc = sqlite3_prepare_v2(db.getDb(), sql, -1, &stmt, nullptr);
+    
+    if (rc != SQLITE_OK) {
+        cout << "Database error." << endl;
+        return -1;
+    }
+    
+    Validate v;
+    
+    cout << left 
+         << setw(8) << "Room ID"
+         << setw(10) << "Room No"
+         << setw(15) << "Room Type"
+         << setw(15) << "Price/Night"  
+         << setw(12) << "Status"
+         << setw(50) << "Facilities" << endl;
+    cout << string(120, '-') << endl;
+    
+    int count = 0;
+    while (sqlite3_step(stmt) == SQLITE_ROW) {
+        count++;
+        
+        int roomId = sqlite3_column_int(stmt, 0);
+        int roomNo = sqlite3_column_int(stmt, 1);
+        string roomType = (char*)sqlite3_column_text(stmt, 2);
+        double price = sqlite3_column_double(stmt, 3);
+        string status = (char*)sqlite3_column_text(stmt, 4);
+        
+        // Get facilities for this room
+        string facilities = getRoomFacilitiesSimple(db, roomId);
+        
+        cout << left 
+             << setw(8) << roomId
+             << setw(10) << roomNo
+             << setw(15) << roomType
+             << setw(15) << v.formatCurrency(price)  // FIXED: proper currency formatting
+             << setw(12) << status
+             << setw(50) << facilities << endl;
+    }
+    
+    sqlite3_finalize(stmt);
+    
+    if (count == 0) {
+        cout << "No available rooms found." << endl;
+        return -1;
+    }
+    
+    cout << string(120, '-') << endl;
+    cout << "Total available rooms: " << count << endl;
+    
+   
+    int room_id;
+    while (true) {
+        cout << "\nEnter Room ID (or 0 to cancel): ";
+        cin >> room_id;
+        cin.ignore();
+        
+        if (room_id == 0) {
+            cout << "Room selection cancelled." << endl;
+            return -1;
+        }
+        
+        // Validate room exists and is available
+        if (isRoomAvailable(db, room_id)) {
+            return room_id;
+        } else {
+            cout << "Room ID " << room_id << " is not available! Please try again." << endl;
+        }
+    }
+}
+
+
+string receptionist::getRoomFacilitiesSimple(Database& db, int room_id) {
+    const char* sql = "SELECT facility_name FROM RoomFacilities WHERE room_id = ? AND availability = 'Available'";
+    
+    sqlite3_stmt* stmt;
+    string facilities = "";
+    
+    int rc = sqlite3_prepare_v2(db.getDb(), sql, -1, &stmt, nullptr);
+    if (rc == SQLITE_OK) {
+        sqlite3_bind_int(stmt, 1, room_id);
+        
+        vector<string> facilityList;
+        while (sqlite3_step(stmt) == SQLITE_ROW) {
+            facilityList.push_back((char*)sqlite3_column_text(stmt, 0));
+        }
+        
+        // Join facilities with commas, limit length
+        for (size_t i = 0; i < facilityList.size(); i++) {
+            if (i > 0) facilities += ", ";
+            facilities += facilityList[i];
+            
+            if (facilities.length() > 45) {
+                facilities = facilities.substr(0, 42) + "...";
+                break;
+            }
+        }
+    }
+    sqlite3_finalize(stmt);
+    
+    return facilities.empty() ? "No facilities" : facilities;
+}
+
+
+bool receptionist::isRoomAvailable(Database& db, int room_id) {
+   
+    const char* sql = "SELECT status FROM RoomDetails WHERE room_id = ?";
+    sqlite3_stmt* stmt;
+    int rc = sqlite3_prepare_v2(db.getDb(), sql, -1, &stmt, nullptr);
+    
+    if (rc != SQLITE_OK) {
+        return false;
+    }
+    
+    sqlite3_bind_int(stmt, 1, room_id);
+    
+    if (sqlite3_step(stmt) != SQLITE_ROW) {
+        sqlite3_finalize(stmt);
+        return false; // Room doesn't exist
+    }
+    
+    string status = (char*)sqlite3_column_text(stmt, 0);
+    sqlite3_finalize(stmt);
+    
+    if (status != "Available") {
+        return false;
+    }
+    
+   
+    const char* reservationSql = R"(
+        SELECT COUNT(*) FROM Reservations 
+        WHERE room_id = ? 
+        AND booking_status IN ('reserved', 'confirmed')
+        AND (check_out_date IS NULL OR check_out_date >= DATE('now'))
+    )";
+    
+    rc = sqlite3_prepare_v2(db.getDb(), reservationSql, -1, &stmt, nullptr);
+    if (rc != SQLITE_OK) {
+        return false;
+    }
+    
+    sqlite3_bind_int(stmt, 1, room_id);
+    
+    int reservationCount = 0;
+    if (sqlite3_step(stmt) == SQLITE_ROW) {
+        reservationCount = sqlite3_column_int(stmt, 0);
+    }
+    
+    sqlite3_finalize(stmt);
+    
+    return reservationCount == 0;
 }
 
 int receptionist::update_reservation(Database& db) {
@@ -318,12 +530,12 @@ int receptionist::update_reservation(Database& db) {
     int reservation_id;
     cout << "\nEnter Reservation ID to update: ";
     cin >> reservation_id;
-    cin.ignore(); // Clear input buffer
+    cin.ignore(); 
     
-    // Check if reservation exists
+    
     const char* checkReservation = "SELECT r.reservation_id, r.check_in_date, r.check_out_date, "
                                   "r.guest_id, r.room_id, r.booking_id, r.booking_status, "
-                                  "g.fname, g.lname, rd.room_no "
+                                  "g.first_name, g.last_name, rd.room_no "
                                   "FROM Reservations r "
                                   "JOIN Guests g ON r.guest_id = g.guest_id "
                                   "JOIN RoomDetails rd ON r.room_id = rd.room_id "
@@ -488,16 +700,170 @@ int receptionist::update_reservation(Database& db) {
 }
 
 
-int receptionist::cancel_reservation(Database& db) {
-            receptionist rec;
-    cout << "\n========== CANCEL RESERVATION ==========" << endl;
-            rec.view_reservations(db);
-            int ID;
-            cout << "  Enter the ID of reservation for checkout " << endl;
-            cin >> ID;
-            db.deleteReservation(ID);
-    return ID;
-}
+// int receptionist::cancel_reservation(Database& db) {
+//     cout << "\n========== CANCEL RESERVATION ==========" << endl;
+
+//     cout << string(50, '-') << endl;
+    
+//     // Show all active reservations first
+//     cout << "Active Reservations:" << endl;
+//     cout << string(80, '-') << endl;
+    
+//     const char* viewSql = R"(
+//         SELECT r.reservation_id, g.first_name, g.last_name, rd.room_no, 
+//                r.check_in_date, r.check_out_date, r.booking_status
+//         FROM Reservations r
+//         JOIN Guests g ON r.guest_id = g.guest_id
+//         JOIN RoomDetails rd ON r.room_id = rd.room_id
+//         WHERE r.booking_status IN ('reserved', 'confirmed')
+//         ORDER BY r.reservation_id
+//     )";
+    
+//     sqlite3_stmt* stmt;
+//     int rc = sqlite3_prepare_v2(db.getDb(), viewSql, -1, &stmt, nullptr);
+    
+//     if (rc != SQLITE_OK) {
+//         cout << "Database error: " << sqlite3_errmsg(db.getDb()) << endl;
+//         return -1;
+//     }
+    
+//     // Header
+//     cout << left 
+//          << setw(12) << "Reservation"
+//          << setw(20) << "Guest Name"
+//          << setw(10) << "Room No"
+//          << setw(12) << "Check-in"
+//          << setw(12) << "Check-out"
+//          << setw(12) << "Status" << endl;
+//     cout << string(80, '-') << endl;
+    
+//     int count = 0;
+//     while (sqlite3_step(stmt) == SQLITE_ROW) {
+//         count++;
+        
+//         int reservationId = sqlite3_column_int(stmt, 0);
+//         string firstName = (char*)sqlite3_column_text(stmt, 1);
+//         string lastName = (char*)sqlite3_column_text(stmt, 2);
+//         int roomNo = sqlite3_column_int(stmt, 3);
+//         string checkIn = sqlite3_column_text(stmt, 4) ? (char*)sqlite3_column_text(stmt, 4) : "N/A";
+//         string checkOut = sqlite3_column_text(stmt, 5) ? (char*)sqlite3_column_text(stmt, 5) : "N/A";
+//         string status = (char*)sqlite3_column_text(stmt, 6);
+        
+//         string guestName = firstName + " " + lastName;
+//         if (guestName.length() > 19) guestName = guestName.substr(0, 16) + "...";
+        
+//         cout << left 
+//              << setw(12) << reservationId
+//              << setw(20) << guestName
+//              << setw(10) << roomNo
+//              << setw(12) << checkIn
+//              << setw(12) << checkOut
+//              << setw(12) << status << endl;
+//     }
+    
+//     sqlite3_finalize(stmt);
+    
+//     if (count == 0) {
+//         cout << "No active reservations found." << endl;
+//         return 0;
+//     }
+    
+//     cout << string(80, '-') << endl;
+//     cout << "Total active reservations: " << count << endl;
+    
+//     // Get reservation ID to cancel
+//     int reservationId;
+//     cout << "\nEnter Reservation ID to cancel (or 0 to exit): ";
+//     cin >> reservationId;
+//     cin.ignore();
+    
+//     if (reservationId == 0) {
+//         cout << "Cancel operation aborted by CrypticLuminary." << endl;
+//         return 0;
+//     }
+    
+//     // Check if reservation exists and is active
+//     const char* checkSql = R"(
+//         SELECT r.reservation_id, g.first_name, g.last_name, rd.room_no, r.booking_status
+//         FROM Reservations r
+//         JOIN Guests g ON r.guest_id = g.guest_id
+//         JOIN RoomDetails rd ON r.room_id = rd.room_id
+//         WHERE r.reservation_id = ? AND r.booking_status IN ('reserved', 'confirmed')
+//     )";
+    
+//     rc = sqlite3_prepare_v2(db.getDb(), checkSql, -1, &stmt, nullptr);
+//     if (rc != SQLITE_OK) {
+//         cout << "Database error: " << sqlite3_errmsg(db.getDb()) << endl;
+//         return -1;
+//     }
+    
+//     sqlite3_bind_int(stmt, 1, reservationId);
+    
+//     if (sqlite3_step(stmt) != SQLITE_ROW) {
+//         cout << "Reservation ID " << reservationId << " not found or already cancelled!" << endl;
+//         sqlite3_finalize(stmt);
+//         return -1;
+//     }
+    
+//     // Get reservation details for confirmation
+//     string firstName = (char*)sqlite3_column_text(stmt, 1);
+//     string lastName = (char*)sqlite3_column_text(stmt, 2);
+//     int roomNo = sqlite3_column_int(stmt, 3);
+//     string currentStatus = (char*)sqlite3_column_text(stmt, 4);
+    
+//     sqlite3_finalize(stmt);
+    
+//     // Show cancellation details
+//     cout << "\n========== CANCELLATION DETAILS ==========" << endl;
+//     cout << "Reservation ID: " << reservationId << endl;
+//     cout << "Guest Name: " << firstName << " " << lastName << endl;
+//     cout << "Room Number: " << roomNo << endl;
+//     cout << "Current Status: " << currentStatus << endl;
+//     cout << string(45, '-') << endl;
+    
+//     // Confirm cancellation
+//     char confirm;
+//     cout << "Are you sure you want to cancel this reservation? (y/n): ";
+//     cin >> confirm;
+//     cin.ignore();
+    
+//     if (confirm != 'y' && confirm != 'Y') {
+//         cout << "Cancellation aborted by user." << endl;
+//         return 0;
+//     }
+    
+//     // Update reservation status to cancelled
+//     const char* cancelSql = R"(
+//         UPDATE Reservations 
+//         SET booking_status = 'cancelled',
+//             check_out_date = DATE('now')
+//         WHERE reservation_id = ?
+//     )";
+    
+//     rc = sqlite3_prepare_v2(db.getDb(), cancelSql, -1, &stmt, nullptr);
+//     if (rc != SQLITE_OK) {
+//         cout << "Database error: " << sqlite3_errmsg(db.getDb()) << endl;
+//         return -1;
+//     }
+    
+//     sqlite3_bind_int(stmt, 1, reservationId);
+    
+//     rc = sqlite3_step(stmt);
+//     sqlite3_finalize(stmt);
+    
+//     if (rc == SQLITE_DONE) {
+//         cout << "\n========== CANCELLATION SUCCESSFUL ==========" << endl;
+//         cout << "Reservation ID " << reservationId << " has been cancelled successfully!" << endl;
+//         cout << "Guest: " << firstName << " " << lastName << endl;
+//         cout << "Room " << roomNo << " is now available for booking." << endl;
+
+//         cout << string(48, '=') << endl;
+//         return 1;
+//     } else {
+//         cout << "Failed to cancel reservation. Database error." << endl;
+//         return -1;
+//     }
+// }
 
 
 int receptionist::view_reservations(Database& db) {
@@ -522,7 +888,7 @@ int receptionist::view_reservations(Database& db) {
     int rc = sqlite3_prepare_v2(db.getDb(), sql.c_str(), -1, &stmt, nullptr);
     if (rc != SQLITE_OK) {
         cout << "Error preparing statement: " << sqlite3_errmsg(db.getDb()) << endl;
-        cout << "Error logged by: CrypticLuminary at 2025-07-01 09:26:53" << endl;
+        
         return -1;
     }
     
@@ -542,7 +908,7 @@ int receptionist::view_reservations(Database& db) {
          << setw(8) << "Room" 
          << setw(12) << "Room Type" 
          << setw(12) << "Status" 
-         << setw(10) << "Booking ID";
+         << setw(10) << "Booking ID"<<endl;
     
 
        
@@ -563,7 +929,7 @@ int receptionist::view_reservations(Database& db) {
              << setw(8) << sqlite3_column_int(stmt, 6)          // room_no
              << setw(12) << sqlite3_column_text(stmt, 7)        // room_type
              << setw(12) << sqlite3_column_text(stmt, 8)        // booking_status
-             << setw(10) << sqlite3_column_int(stmt, 9);        // booking_id
+             << setw(10) << sqlite3_column_int(stmt, 9) << endl;        // booking_id
       
     }
     
@@ -613,7 +979,7 @@ bool receptionist::staffPower(Database& db) {
         cout << "   8. View Guest Billing" << endl;
         cout << "   0. Exit Staff Panel" << endl;
         cout << string(80, '=') << endl;
-        cout << "Enter your choice (0-7): ";
+        cout << "Enter your choice (0-8): ";
         
         cin >> choice;
         cin.ignore(); // Clear input buffer
@@ -754,7 +1120,97 @@ bool receptionist::staffPower(Database& db) {
 }
 
 bool receptionist::updateGuestDetail(Database &db) {
-    db.printGuests();
+            cout << "\n>>> ALL RESERVATIONS WITH GUEST INFORMATION <<<\n";
+        
+        
+        const char* upsql = R"(
+            SELECT 
+                r.reservation_id,
+                g.first_name,
+                g.last_name,
+                g.contact_info,
+                g.email,
+                rd.room_no,
+                rd.room_type,
+                r.check_in_date,
+                r.check_out_date,
+                r.stay_duration,
+                r.booking_status,
+                rd.price_per_night,
+                (r.stay_duration * rd.price_per_night) as total_cost
+            FROM Reservations r
+            INNER JOIN Guests g ON r.guest_id = g.guest_id
+            INNER JOIN RoomDetails rd ON r.room_id = rd.room_id
+            ORDER BY r.reservation_id DESC
+        )";
+        
+        sqlite3_stmt* stmt;
+        int rc = sqlite3_prepare_v2(db.getDb(), upsql, -1, &stmt, nullptr);
+        
+        if (rc != SQLITE_OK) {
+            cout << " Database error: " << sqlite3_errmsg(db.getDb()) << endl;
+            return 0;
+        }
+        
+        
+        cout << string(140, '=') << endl;
+        cout << left 
+             << setw(5) << "ID"
+             << setw(20) << "Guest Name"
+             << setw(15) << "Contact"
+             << setw(25) << "Email"
+             << setw(8) << "Room"
+             << setw(12) << "Room Type"
+             << setw(12) << "Check-in"
+             << setw(12) << "Check-out"
+             << setw(6) << "Days"
+             << setw(12) << "Status"
+             << setw(10) << "Total Cost" << endl;
+        cout << string(140, '-') << endl;
+        
+        int count = 0;
+        double totalRevenue = 0.0;
+        
+        while (sqlite3_step(stmt) == SQLITE_ROW) {
+            count++;
+            
+            int reservationId = sqlite3_column_int(stmt, 0);
+            string firstName = (char*)sqlite3_column_text(stmt, 1);
+            string lastName = (char*)sqlite3_column_text(stmt, 2);
+            string contact = (char*)sqlite3_column_text(stmt, 3);
+            string email = (char*)sqlite3_column_text(stmt, 4);
+            int roomNo = sqlite3_column_int(stmt, 5);
+            string roomType = (char*)sqlite3_column_text(stmt, 6);
+            string checkIn = (char*)sqlite3_column_text(stmt, 7);
+            string checkOut = sqlite3_column_text(stmt, 8) ? (char*)sqlite3_column_text(stmt, 8) : "Ongoing";
+            int stayDuration = sqlite3_column_int(stmt, 9);
+            string status = (char*)sqlite3_column_text(stmt, 10);
+            double pricePerNight = sqlite3_column_double(stmt, 11);
+            double totalCost = sqlite3_column_double(stmt, 12);
+            
+            totalRevenue += totalCost;
+            Validate q;
+            cout << left 
+                 << setw(5) << reservationId
+                 << setw(20) << (firstName + " " + lastName).substr(0, 19)
+                 << setw(15) << contact.substr(0, 14)
+                 << setw(25) << email.substr(0, 24)
+                 << setw(8) << roomNo
+                 << setw(12) << roomType.substr(0, 11)
+                 << setw(12) << checkIn
+                 << setw(12) << checkOut.substr(0, 11)
+                 << setw(6) << stayDuration
+                 << setw(12) << status.substr(0, 11)
+                 << setw(10) << fixed <<  q.formatCurrency(totalCost) << endl;
+        }
+        
+        sqlite3_finalize(stmt);
+        
+        cout << string(140, '=') << endl;
+        cout << " SUMMARY:" << endl;
+        cout << "   Total Reservations: " << count << endl;
+        cout << "   Total Revenue: $" << fixed << setprecision(2) << totalRevenue << endl;
+
     cout << "\n--- UPDATE GUEST DETAIL ---" << endl;
     int guest_id;
     cout << "Enter Guest ID to update: ";
@@ -764,7 +1220,7 @@ bool receptionist::updateGuestDetail(Database &db) {
     // Check if guest exists
     const char* checkSql = "SELECT first_name, last_name FROM Guests WHERE guest_id = ?;";
     sqlite3_stmt* checkStmt;
-    int rc = sqlite3_prepare_v2(db.getDb(), checkSql, -1, &checkStmt, nullptr);
+     rc = sqlite3_prepare_v2(db.getDb(), checkSql, -1, &checkStmt, nullptr);
     if (rc != SQLITE_OK) {
         cerr << "Prepare failed: " << sqlite3_errmsg(db.getDb()) << endl;
         return false;
@@ -798,7 +1254,7 @@ bool receptionist::updateGuestDetail(Database &db) {
     cout << "Enter new Address: "; getline(cin, address);
 
     const char* sql = "UPDATE Guests SET first_name = ?, last_name = ?, contact_info = ?, email = ?, id_proof = ?, relationship = ?, address = ? WHERE guest_id = ?;";
-    sqlite3_stmt* stmt;
+    // sqlite3_stmt* stmt;
     rc = sqlite3_prepare_v2(db.getDb(), sql, -1, &stmt, nullptr);
     if (rc != SQLITE_OK) {
         cerr << "Prepare failed: " << sqlite3_errmsg(db.getDb()) << endl;
@@ -844,7 +1300,7 @@ bool receptionist::deleteGuestDetail(Database &db) {
     }
 
     // Check if guest exists
-    const char* checkSql = "SELECT fname, lname FROM Guests WHERE guest_id = ?;";
+    const char* checkSql = "SELECT first_name, last_name FROM Guests WHERE guest_id = ?;";
     sqlite3_stmt* checkStmt;
     int rc = sqlite3_prepare_v2(db.getDb(), checkSql, -1, &checkStmt, nullptr);
     if (rc != SQLITE_OK) {
@@ -882,3 +1338,165 @@ bool receptionist::deleteGuestDetail(Database &db) {
     }
 }
 
+int receptionist::cancel_reservation(Database& db) {
+    cout << "\n========== CANCEL RESERVATION ==========" << endl;
+    cout << "Current Date and Time (UTC - YYYY-MM-DD HH:MM:SS formatted): 2025-07-10 22:12:25" << endl;
+    cout << "Current User's Login: CrypticLuminary" << endl;
+    cout << string(50, '-') << endl;
+    
+    // Show all active reservations first
+    cout << "Active Reservations:" << endl;
+    cout << string(80, '-') << endl;
+    
+    const char* viewSql = R"(
+        SELECT r.reservation_id, g.first_name, g.last_name, rd.room_no, 
+               r.check_in_date, r.check_out_date, r.booking_status
+        FROM Reservations r
+        JOIN Guests g ON r.guest_id = g.guest_id
+        JOIN RoomDetails rd ON r.room_id = rd.room_id
+        WHERE r.booking_status IN ('reserved', 'confirmed')
+        ORDER BY r.reservation_id
+    )";
+    
+    sqlite3_stmt* stmt;
+    int rc = sqlite3_prepare_v2(db.getDb(), viewSql, -1, &stmt, nullptr);
+    
+    if (rc != SQLITE_OK) {
+        cout << "Database error: " << sqlite3_errmsg(db.getDb()) << endl;
+        return -1;
+    }
+    
+    // Header
+    cout << left 
+         << setw(12) << "Reservation"
+         << setw(20) << "Guest Name"
+         << setw(10) << "Room No"
+         << setw(12) << "Check-in"
+         << setw(12) << "Check-out"
+         << setw(12) << "Status" << endl;
+    cout << string(80, '-') << endl;
+    
+    int count = 0;
+    while (sqlite3_step(stmt) == SQLITE_ROW) {
+        count++;
+        
+        int reservationId = sqlite3_column_int(stmt, 0);
+        string firstName = (char*)sqlite3_column_text(stmt, 1);
+        string lastName = (char*)sqlite3_column_text(stmt, 2);
+        int roomNo = sqlite3_column_int(stmt, 3);
+        string checkIn = sqlite3_column_text(stmt, 4) ? (char*)sqlite3_column_text(stmt, 4) : "N/A";
+        string checkOut = sqlite3_column_text(stmt, 5) ? (char*)sqlite3_column_text(stmt, 5) : "N/A";
+        string status = (char*)sqlite3_column_text(stmt, 6);
+        
+        string guestName = firstName + " " + lastName;
+        if (guestName.length() > 19) guestName = guestName.substr(0, 16) + "...";
+        
+        cout << left 
+             << setw(12) << reservationId
+             << setw(20) << guestName
+             << setw(10) << roomNo
+             << setw(12) << checkIn
+             << setw(12) << checkOut
+             << setw(12) << status << endl;
+    }
+    
+    sqlite3_finalize(stmt);
+    
+    if (count == 0) {
+        cout << "No active reservations found." << endl;
+        return 0;
+    }
+    
+    cout << string(80, '-') << endl;
+    cout << "Total active reservations: " << count << endl;
+    
+    // Get reservation ID to cancel
+    int reservationId;
+    cout << "\nEnter Reservation ID to cancel (or 0 to exit): ";
+    cin >> reservationId;
+    cin.ignore();
+    
+    if (reservationId == 0) {
+        cout << "Cancel operation aborted by CrypticLuminary." << endl;
+        return 0;
+    }
+    
+    // Check if reservation exists and is active
+    const char* checkSql = R"(
+        SELECT r.reservation_id, g.first_name, g.last_name, rd.room_no, r.booking_status
+        FROM Reservations r
+        JOIN Guests g ON r.guest_id = g.guest_id
+        JOIN RoomDetails rd ON r.room_id = rd.room_id
+        WHERE r.reservation_id = ? AND r.booking_status IN ('reserved', 'confirmed')
+    )";
+    
+    rc = sqlite3_prepare_v2(db.getDb(), checkSql, -1, &stmt, nullptr);
+    if (rc != SQLITE_OK) {
+        cout << "Database error: " << sqlite3_errmsg(db.getDb()) << endl;
+        return -1;
+    }
+    
+    sqlite3_bind_int(stmt, 1, reservationId);
+    
+    if (sqlite3_step(stmt) != SQLITE_ROW) {
+        cout << "Reservation ID " << reservationId << " not found or already cancelled!" << endl;
+        sqlite3_finalize(stmt);
+        return -1;
+    }
+    
+    // Get reservation details for confirmation
+    string firstName = (char*)sqlite3_column_text(stmt, 1);
+    string lastName = (char*)sqlite3_column_text(stmt, 2);
+    int roomNo = sqlite3_column_int(stmt, 3);
+    string currentStatus = (char*)sqlite3_column_text(stmt, 4);
+    
+    sqlite3_finalize(stmt);
+    
+    // Show cancellation details
+    cout << "\n========== CANCELLATION DETAILS ==========" << endl;
+    cout << "Reservation ID: " << reservationId << endl;
+    cout << "Guest Name: " << firstName << " " << lastName << endl;
+    cout << "Room Number: " << roomNo << endl;
+    cout << "Current Status: " << currentStatus << endl;
+    cout << string(45, '-') << endl;
+    
+    // Confirm cancellation
+    char confirm;
+    cout << "Are you sure you want to cancel this reservation? (y/n): ";
+    cin >> confirm;
+    cin.ignore();
+    
+    if (confirm != 'y' && confirm != 'Y') {
+        cout << "Cancellation aborted by user." << endl;
+        return 0;
+    }
+    
+    // FIXED: Only update booking_status to cancelled - DO NOT touch check_out_date
+    const char* cancelSql = "UPDATE Reservations SET booking_status = 'cancelled' WHERE reservation_id = ?";
+    
+    rc = sqlite3_prepare_v2(db.getDb(), cancelSql, -1, &stmt, nullptr);
+    if (rc != SQLITE_OK) {
+        cout << "Database error: " << sqlite3_errmsg(db.getDb()) << endl;
+        return -1;
+    }
+    
+    sqlite3_bind_int(stmt, 1, reservationId);
+    
+    rc = sqlite3_step(stmt);
+    sqlite3_finalize(stmt);
+    
+    if (rc == SQLITE_DONE) {
+        cout << "\n========== CANCELLATION SUCCESSFUL ==========" << endl;
+        cout << "Reservation ID " << reservationId << " has been cancelled successfully!" << endl;
+        cout << "Guest: " << firstName << " " << lastName << endl;
+        cout << "Room " << roomNo << " is now available for booking." << endl;
+        cout << "Status changed from '" << currentStatus << "' to 'cancelled'" << endl;
+        cout << "Cancellation processed by: CrypticLuminary" << endl;
+        cout << "Cancellation time: 2025-07-10 22:12:25" << endl;
+        cout << string(48, '=') << endl;
+        return 1;
+    } else {
+        cout << "Failed to cancel reservation. Database error." << endl;
+        return -1;
+    }
+}

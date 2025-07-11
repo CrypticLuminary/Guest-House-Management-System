@@ -21,11 +21,11 @@ int main() {
          return 1;
      }
 
-    if (db.createTable()) {
-    db.createTriggrs(); 
-    cout << "Database and triggers created successfully!" << endl;
-
-    }
+   if (!db.createTriggrs()) {
+    cerr << "Failed to create triggers!" << endl;
+    db.close();
+    return 1;
+   }
 
     Admin a;
     staffmanager s;

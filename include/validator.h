@@ -10,6 +10,8 @@ class Validate
     public:
         bool isValidEmail(const string& email);
         bool isValidNumber(const string& number); 
+        bool isValidName(const std::string& name);
+        string formatCurrency(double amount);
         string getpassword();
              
 };

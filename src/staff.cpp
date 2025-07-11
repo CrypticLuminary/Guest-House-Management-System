@@ -83,14 +83,6 @@ if (username.empty() || password.empty()) {
     return false;
 }
 
-// Success Message
-
-cout << "********************************************************************************\n";
-cout << "*                            LOGIN SUCCESSFUL!                                 *\n";
-cout << "********************************************************************************\n";
-cout << "\n>> Welcome, " << username << "!\n";
-cout << ">> Access granted to Reception Portal\n\n";
-    
     // Check credentials
     const char* loginSQL = "SELECT staff_id, username, role, status FROM Staff "
                           "WHERE username = ? AND password = ?;";
@@ -107,7 +99,7 @@ cout << ">> Access granted to Reception Portal\n\n";
     }
     
     int staffId = sqlite3_column_int(stmt, 0);
-    // Fix: Assign to reference parameters correctly
+ 
     loggedUsername = (char*)sqlite3_column_text(stmt, 1);
     loggedRole = (char*)sqlite3_column_text(stmt, 2);
     string status = (char*)sqlite3_column_text(stmt, 3);
@@ -127,7 +119,11 @@ cout << ">> Access granted to Reception Portal\n\n";
     sqlite3_finalize(stmt);
     
     cout << " Login successful!" << endl;
-    cout << "Welcome " << loggedUsername << " (" << loggedRole << ")" << endl;
+    cout << "********************************************************************************\n";
+    cout << "*                            LOGIN SUCCESSFUL!                                 *\n";
+    cout << "********************************************************************************\n";
+    cout << "\n>> Welcome, " << username << "!\n";
+    cout << ">> Access granted to Reception Portal\n\n";
     cout << "\n\n";
     r.staffPower(db);
     
@@ -139,8 +135,7 @@ bool staffmanager::insertStaff(Database& db) {
     string username, password, email, role;
     
     cout << "\n=== ADD NEW STAFF ===" << endl;
-    cout << "Current Time: 2025-07-01 04:54:27" << endl;
-    cout << "Current User: CrypticLuminary" << endl;
+
     
     // Get username
     cout << "Username: ";
@@ -159,7 +154,7 @@ bool staffmanager::insertStaff(Database& db) {
     }
     
     Validate v;
-    // Get pass
+
     cout << "Password: ";
     password = v.getpassword();
     if (password.length() < 6) {
@@ -168,7 +163,7 @@ bool staffmanager::insertStaff(Database& db) {
     }
     
     // Get role
-    cout << "Role (admin/manager/receptionist/staff): ";
+    cout << "Role (admin/staff): ";
     getline(cin, role);
     if (role != "admin" && role != "manager" && role != "receptionist" && role != "staff") {
         cout << " Invalid role!" << endl;
@@ -190,7 +185,7 @@ bool staffmanager::insertStaff(Database& db) {
     
     // Insert staff
     const char* insertSQL = "INSERT INTO Staff (username, password, email, role, status, created_at, created_by) "
-                           "VALUES (?, ?, ?, ?, 'active', '2025-07-01 04:54:27', 'CrypticLuminary');";
+                           "VALUES (?, ?, ?, ?, 'active', datetime('now'), 'CrypticLuminary');";
     
     int rc = sqlite3_prepare_v2(db.getDb(), insertSQL, -1, &stmt, nullptr);
     sqlite3_bind_text(stmt, 1, username.c_str(), -1, SQLITE_STATIC);
@@ -204,7 +199,7 @@ bool staffmanager::insertStaff(Database& db) {
     if (rc == SQLITE_DONE) {
         cout << " Staff created successfully!" << endl;
         cout << "Staff ID: " << sqlite3_last_insert_rowid(db.getDb()) << endl;
-        cout << "Created by: CrypticLuminary at 2025-07-01 04:54:27" << endl;
+       
         return true;
     } else {
         cout << " Failed to create staff!" << endl;
@@ -218,8 +213,7 @@ bool staffmanager::updateStaff(Database& db) {
     string newEmail, newRole;
     
     cout << "\n=== UPDATE STAFF ===" << endl;
-    cout << "Current Time: 2025-07-01 04:54:27" << endl;
-    cout << "Current User: CrypticLuminary" << endl;
+
     
     // Get staff ID
     cout << "Enter Staff ID: ";
@@ -247,7 +241,7 @@ bool staffmanager::updateStaff(Database& db) {
         return false;
     }
     
-    // Get new role
+
     cout << "New Role (admin/manager/receptionist/staff): ";
     getline(cin, newRole);
     if (newRole != "admin" && newRole != "manager" && newRole != "receptionist" && newRole != "staff") {
@@ -256,7 +250,7 @@ bool staffmanager::updateStaff(Database& db) {
     }
     
     // Update staff
-    const char* updateSQL = "UPDATE Staff SET email = ?, role = ?, updated_at = '2025-07-01 04:54:27', "
+    const char* updateSQL = "UPDATE Staff SET email = ?, role = ?, updated_at = DATE('NOW') "
                            "updated_by = 'CrypticLuminary' WHERE staff_id = ?;";
     
     int rc = sqlite3_prepare_v2(db.getDb(), updateSQL, -1, &stmt, nullptr);
@@ -269,7 +263,7 @@ bool staffmanager::updateStaff(Database& db) {
     
     if (rc == SQLITE_DONE) {
         cout << " Staff updated successfully!" << endl;
-        cout << "Updated by: CrypticLuminary at 2025-07-01 04:54:27" << endl;
+
         return true;
     } else {
         cout << " Failed to update staff!" << endl;
@@ -282,15 +276,13 @@ bool staffmanager::deleteStaff(Database& db) {
     char confirm;
     
     cout << "\n=== DELETE STAFF ===" << endl;
-    cout << "Current Time: 2025-07-01 04:54:27" << endl;
-    cout << "Current User: CrypticLuminary" << endl;
-    
-    // Get staff ID
+
+   
     cout << "Enter Staff ID: ";
     cin >> staffId;
     cin.ignore();
     
-    // Check if staff exists
+ 
     const char* checkSQL = "SELECT username, role FROM Staff WHERE staff_id = ?;";
     sqlite3_stmt* stmt;
     sqlite3_prepare_v2(db.getDb(), checkSQL, -1, &stmt, nullptr);
@@ -312,7 +304,7 @@ bool staffmanager::deleteStaff(Database& db) {
         return false;
     }
     
-    // Confirm deletion
+  
     cout << "Delete staff: " << username << " (" << role << ")? (y/n): ";
     cin >> confirm;
     cin.ignore();
@@ -322,7 +314,7 @@ bool staffmanager::deleteStaff(Database& db) {
         return false;
     }
     
-    // Delete staff
+   
     const char* deleteSQL = "DELETE FROM Staff WHERE staff_id = ?;";
     
     int rc = sqlite3_prepare_v2(db.getDb(), deleteSQL, -1, &stmt, nullptr);
@@ -333,7 +325,7 @@ bool staffmanager::deleteStaff(Database& db) {
     
     if (rc == SQLITE_DONE) {
         cout << " Staff deleted successfully!" << endl;
-        cout << "Deleted by: CrypticLuminary at 2025-07-01 04:54:27" << endl;
+  
         return true;
     } else {
         cout << " Failed to delete staff!" << endl;
@@ -377,14 +369,13 @@ bool staffmanager::changePassword(Database& db, const string& username) {
     string currentPassword, newPassword;
     
     cout << "\n=== CHANGE PASSWORD ===" << endl;
-    cout << "Current Time: 2025-07-01 04:54:27" << endl;
-    cout << "Current User: CrypticLuminary" << endl;
+
     cout << "User: " << username << endl;
     
     cout << "Current Password: ";
     getline(cin, currentPassword);
     
-    // Verify current password
+    
     const char* verifySQL = "SELECT staff_id FROM Staff WHERE username = ? AND password = ?;";
     sqlite3_stmt* stmt;
     int rc = sqlite3_prepare_v2(db.getDb(), verifySQL, -1, &stmt, nullptr);
@@ -415,7 +406,7 @@ bool staffmanager::changePassword(Database& db, const string& username) {
     }
     
     // Update password
-    const char* updateSQL = "UPDATE Staff SET password = ?, updated_at = '2025-07-01 04:54:27', "
+    const char* updateSQL = "UPDATE Staff SET password = ?, updated_at = DATE('NOW') "
                            "updated_by = ? WHERE staff_id = ?;";
     
     rc = sqlite3_prepare_v2(db.getDb(), updateSQL, -1, &stmt, nullptr);
@@ -428,7 +419,7 @@ bool staffmanager::changePassword(Database& db, const string& username) {
     
     if (rc == SQLITE_DONE) {
         cout << " Password changed successfully!" << endl;
-        cout << "Changed by: " << username << " at 2025-07-01 04:54:27" << endl;
+        cout << "Changed by: " << username << endl;
         return true;
     } else {
         cout << " Failed to change password!" << endl;
@@ -447,7 +438,7 @@ void staffmanager::staffMenu(Database& db) {
     int choice;
     while (true) {
         cout << "\n=== STAFF MANAGEMENT ===" << endl;
-        cout << "Time: 2025-07-01 04:54:27" << endl;
+
         cout << "User: " << loggedUsername << " (" << loggedRole << ")" << endl;
         cout << "1. View All Staff" << endl;
         cout << "2. Add Staff" << endl;
@@ -488,7 +479,7 @@ void staffmanager::staffMenu(Database& db) {
                 changePassword(db, loggedUsername);
                 break;
             case 0:
-                cout << " Logged out by CrypticLuminary at 2025-07-01 04:54:27!" << endl;
+                cout << " Logged out " << endl;
                 return;
             default:
                 cout << " Invalid choice!" << endl;
